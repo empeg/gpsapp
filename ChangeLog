@@ -1,3 +1,11 @@
+Changes in v0.17
+
+ * Corrected when speed in satellite info screen is dimmed.
+ * Fixed popup refreshing when waypoints follow closely.
+ * Enlarged font for current gps speed in map screen, moved distance back
+   to the side panel and reduced the size of the bearing pointer.
+ * Fixed negative altitude formatting bug.
+
 Changes in v0.16
 
  * Argh, routedir= option was broken because I assigned allocated memory to

@@ -8,8 +8,6 @@
 
 * NMEA output over IRDA (and in the satellite screen).
 
-* Initial position in config.ini, Zodiac support.
-
 * Use the bearing pointer as a compass when no route is loaded.
   (Need a way to discard the current route then...)
 
