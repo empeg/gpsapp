@@ -17,10 +17,8 @@ Installation
   they are executable (chmod 755).
 
 - Put 'M50gpsapp' in /etc/preinit.d, so that gpsapp is started when the
-  player is booted. You can specify a specific GPS protocol in M50gpsapp
-  (currently NMEA/Garmin/TSIP/TAIP). The shell really doesn't like CR
-  characters, I'm not sure if there is a windows editor that avoids
-  adding these.
+  player is booted. If your GPS does not provide NMEA output, you can
+  specify an alternative protocol in config.ini (see below).
 
 - We need to keep the player application off of the serial port. This
   involves running the player with the -s- option, which can as far as I
@@ -43,9 +41,8 @@ Installation
   data is received over the serial port, presumably from the GPS, or a
   button is pressed,
 
-  If the first message is 'Unknown protocol, using NMEA' the M50gpsapp
-  script probably has CR/LF (dos) instead of just LF (unix) at the end
-  of the line.
+  If the first message is 'Unknown protocol, using NMEA', you specified
+  an unknown protocol in config.ini.
 
 - Once any input is received you are in the 'satellite signal strength'
   view. This shows signal strength bars in the left of the screen, and

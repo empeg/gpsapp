@@ -341,7 +341,11 @@ int main(int argc, char **argv)
     if (empeg_init() == -1)
 	exit(-1);
 
-    /* only for backward compatibility as the user can specify the protocol in
+    /* set a default protocol, now we only complain when the user specifies an
+     * unknown protocol in config.ini */
+    serial_protocol("NMEA");
+
+    /* For backward compatibility as the user can specify the protocol in
      * config.ini */
     if (argc > 1)
 	serial_protocol(argv[1]);

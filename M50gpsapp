@@ -1,8 +1,5 @@
 #!/bin/sh
 
-# Could also be Garmin, TSIP, TAIP
-PROTOCOL=NMEA	# most GPS's support this
-
 [ -x /programs0/incar ] && /programs0/incar || exit
-[ -x /programs0/gpsapp ] && /programs0/gpsapp $PROTOCOL
+[ -x /programs0/gpsapp ] && /programs0/gpsapp
 
