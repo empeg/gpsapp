@@ -317,7 +317,7 @@ init_gpsapp()
 	ret = config_ini_option (buf, "scale", &inside);
 	if (ret > -1 && ret < 2) show_scale = ret;
 	ret = config_ini_option (buf, "popups", &inside);
-	if (ret > -1 && ret < 2) show_popups = ret;
+	if (ret > -1 && ret < 3) show_popups = ret;
 	ret = config_ini_option (buf, "time", &inside);
 	if (ret > -1 && ret < 2) show_time = ret;
 	if (lseek(fd, -CONFIG_HDRLEN, SEEK_CUR) != done- CONFIG_HDRLEN) {

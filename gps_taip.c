@@ -6,6 +6,7 @@
 
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 #include "gpsapp.h"
 #include "gps_protocol.h"
 

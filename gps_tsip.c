@@ -5,7 +5,8 @@
  */
 
 #include <stdio.h>
-#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "gpsapp.h"
 #include "gps_protocol.h"
 

@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <time.h>
+#include <stdlib.h>
 #include "gpsapp.h"
 
 #define WGS84_a    6378137.0
