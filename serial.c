@@ -78,6 +78,7 @@ static int gpsd_open(void)
     setsockopt(serialfd, SOL_TCP, TCP_NODELAY, &flag, sizeof(flag));
     //fcntl(serialfd, F_SETFL, O_NONBLOCK);
 
+    write(serialfd, "R", 1);
     /* drop back to NMEA, because that is what gpsd is actually spitting out */
     serial_protocol("NMEA");
 
