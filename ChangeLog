@@ -3,9 +3,10 @@ Changes in v0.13
  * Fixed formatdist, now it takes a signed integer.
  * Added DDD/DMM/DMS coord format.
  * Fixed initial satellite capture when gps time is not yet available.
- * Dropped map scale marker, scale now matches the height of the map.
+ * Using separator bar as scale marker.
  * Added satellite strength scale at 20db intervals.
  * Display large hdop number as --.--.
+ * Removed show_rubberband option.
 
 Changes in v0.12
 
