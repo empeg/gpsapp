@@ -15,6 +15,8 @@ static void taip_decode(struct gps_state *gps)
     char buf[10];
     double speed, b;
 
+    draw_activity(0);
+
     if (strcmp(packet, "RTM") == 0) {
 	// datestamp = ???
     } else if (strcmp(packet, "RPV") == 0) {

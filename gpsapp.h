@@ -66,6 +66,7 @@ double bearing(const struct xy *coord1, const struct xy *coord2);
 int towards(const struct xy *here, const struct xy *coord, const int dir);
 
 /* screen update functions (draw.c) */
+void draw_activity(int redraw);
 void draw_clear(void);
 void draw_zoom(int inout);
 void draw_point(const struct xy *coord, const int shade);
@@ -120,6 +121,9 @@ void serial_poll(void);
 #define CONFIG_HEADER "[gpsapp]"
 #define CONFIG_HDRLEN 8
 int config_ini_option (char *s, char *match, int *inside);
+
+/* figure out what the current visual is (gpsapp.c) */
+int get_visual(void);
 
 /* zodiac data send function (for init) (gps_earthmate.c) */
 void zodiac_send (int type, unsigned short *dat, int dlen);

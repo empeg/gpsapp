@@ -19,6 +19,25 @@
 static unsigned char screen[VFD_HEIGHT * VFD_BYTES_PER_SCANLINE];
 static int map_scale = 5;
 
+void draw_activity(int redraw)
+{
+    static int lastshade = 1;
+    
+    if (get_visual() == 2)
+        return;
+
+    vfdlib_drawSolidRectangleClipped(screen, VFD_WIDTH-4, 2, VFD_WIDTH-2, 4, 
+                                     (lastshade < 4) ? lastshade : 
+                                     (6 - lastshade));
+    empeg_updatedisplay(screen);
+
+    if (!redraw) {
+      lastshade++;
+      if (lastshade > 5)
+          lastshade = 1;
+    }
+}
+
 void draw_clear(void)
 {
     vfdlib_fastclear(screen);
@@ -69,7 +88,7 @@ void draw_point(const struct xy *coord, const int shade)
 
     c = project(coord, &xy);
     if (!c)
-	vfdlib_drawPointClipped(screen, xy.x, xy.y, VFDSHADE_BRIGHT);
+	vfdlib_drawPointClipped(screen, xy.x, xy.y, shade);
 }
 
 void draw_lines(const struct xy *pts, const int npts, const int shade)

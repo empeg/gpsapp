@@ -167,6 +167,8 @@ void nmea_decode(struct gps_state *gps)
     fprintf(stderr, "%s\n", packet);
 #endif
 
+    draw_activity(0);
+
     p = &packet[6];
 
     if (memcmp(&packet[1], "GPGGA", 5) == 0) {

@@ -296,6 +296,8 @@ static void tsip_decode(struct gps_state *gps)
     fprintf(stderr, "receiving %x\n", packet[0]);
 #endif
 
+    draw_activity(0);
+
     switch(packet[0]) {
     case 0x41: tsip_41_time(); break;
     case 0x45: tsip_45_version(); break;

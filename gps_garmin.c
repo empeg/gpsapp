@@ -89,6 +89,8 @@ static void garmin_r33pvt_data(struct gps_state *gps)
 
 static void garmin_decode(struct gps_state *gps)
 {
+    draw_activity(0);
+
     if (packet[0] == PVT)
 	garmin_r33pvt_data(gps);
 }

@@ -52,6 +52,11 @@ static char *menu_msg[] = {
 };
 #define MENU_ENTRIES 8
 
+int get_visual()
+{
+    return (int)visual;
+}
+
 void timesub(struct timeval *res, struct timeval *from, struct timeval *val)
 {
     res->tv_sec  = from->tv_sec  - val->tv_sec;
@@ -70,6 +75,9 @@ static void refresh_display(void)
     do_refresh = 0;
 
     draw_clear();
+
+    draw_activity(1);
+
     switch (visual) {
     case VIEW_SATS:
 	draw_sats(&gps_state);

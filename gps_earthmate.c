@@ -136,6 +136,8 @@ static void em_decode(struct gps_state *gps)
         return;
     }
 
+    draw_activity(0);
+
     /* verify checksum XXX */
 
     switch(INT16(&packet[0])) {

@@ -6,6 +6,13 @@ Changes in v0.17
    to the side panel and reduced the size of the bearing pointer.
  * Fixed negative altitude formatting bug.
 
+ And a whole set of patches from Derrick,
+ * mini_ifconfig, and send the trigger to gpsd to forward raw NMEA data.
+ * We needed unsigned int distances, the world doesn't want to fit in a
+   signed int.
+ * Activity led, don't know what it looks like, but it should change whenever
+   packets get decoded successfully. Probably looks nifty :)
+
 Changes in v0.16
 
  * Argh, routedir= option was broken because I assigned allocated memory to
