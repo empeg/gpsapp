@@ -78,8 +78,8 @@ static int em_1003sats(struct gps_state *gps)
     
     for (j = 0; j < INT16(&packet[WD(14)]); j++) {
 	svn = INT16(&packet[WD(15 + (3 * j))]);
-	elv = radtodeg(INT16(&packet[WD(17 + (3 * j))]) * 1.0e-4);
-	azm = radtodeg(INT16(&packet[WD(16 + (3 * j))]) * 1.0e-4);
+	elv = INT16(&packet[WD(17 + (3 * j))]) * 1.0e-4;
+	azm = INT16(&packet[WD(16 + (3 * j))]) * 1.0e-4;
 
 	new_sat(gps, svn, UNKNOWN_TIME, elv, azm, UNKNOWN_SNR, UNKNOWN_USED);
     }

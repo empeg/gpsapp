@@ -11,6 +11,8 @@ Changes in v0.11
  * Generalized new_sat helper function, now TSIP uses it as well.
  * Some changes for earthmate, I hope I didn't break anything that wasn't
    already broken.
+ * Moved generic helper functions for the protocol parsers into
+   gps_protocol.c.
 
 Changes in v0.10
 

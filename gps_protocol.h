@@ -19,12 +19,12 @@ void serial_send(char *buf, int len);
 /* structure to be filled in by the decoding protocols */
 #define MAX_TRACKED_SATS 8
 struct gps_sat {
-    int   svn;  /* satellite identifier (set to 0 when this slot is unused) */
-    int	  time; /* appx time of last measurement */
-    int   used; /* set when satellite is used in the fix */
-    float snr;  /* signal to noise ratio, dB */
-    float elv;  /* elevation above horizon in radians */
-    float azm;  /* azimuth from true north in radians */
+    int    svn;  /* satellite identifier (set to 0 when this slot is unused) */
+    int	   time; /* appx time of last measurement */
+    double elv;  /* elevation above horizon in radians */
+    double azm;  /* azimuth from true north in radians */
+    int    snr;  /* signal to noise ratio, scaled to [0, 24] */
+    int    used; /* set when satellite is used in the fix */
 };
 
 struct gps_state {
@@ -49,11 +49,11 @@ struct gps_protocol {
 };
 
 #define UNKNOWN_TIME -1
-#define UNKNOWN_ELV -1
-#define UNKNOWN_AZM -1
+#define UNKNOWN_ELV -1.0
+#define UNKNOWN_AZM -1.0
 #define UNKNOWN_SNR -1
 #define UNKNOWN_USED -1
-void new_sat(struct gps_state *gps, int svn, int time, int elv, int azm,
+void new_sat(struct gps_state *gps, int svn, int time, double elv, double azm,
 	     int snr, int used);
 int conv_date(int year, int mon, int day);
 
