@@ -188,23 +188,20 @@ static void route_update_gps_speed(void)
     double vmg_east, vmg_north, b;
     int vmg = 0;
     
-#if 1
     if (nextwp < route.nwps) {
 	int idx = route.wps[nextwp].idx;
-#else
-    if (minidx < route.npts) {
-	int idx = minidx;
-#endif
 	/* calculate actual velocity towards the target wp */
 	b = bearing(&gps_coord.xy, &route.pts[idx]);
 
 	vmg_east = sin(b) * gps_state.spd_east;
 	vmg_north = cos(b) * gps_state.spd_north;
 
-	vmg = sqrt(vmg_east * vmg_east + vmg_north * vmg_north) * 3600.0;
+	if (vmg_east && vmg_north) {
+	    vmg = sqrt(vmg_east * vmg_east + vmg_north * vmg_north) * 3600.0;
+	    gps_avgvmg += vmg - (gps_avgvmg >> AVGVMG_SHIFT);
+	}
     }
 
-    gps_avgvmg += vmg - (gps_avgvmg >> AVGVMG_SHIFT);
 #ifndef __arm__
     fprintf(stderr, "vmg %f\n", (gps_avgvmg >> AVGVMG_SHIFT) / 1609.344);
 #endif

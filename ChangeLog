@@ -1,28 +1,38 @@
+Changes in v0.5
+
+ * Changed NMEA parser to accept floats in the time field. My idea of the
+   VTG sentence was completely wrong, fixed that too.
+ * Do not log a position in the track log when it is the same as the last entry.
+ * Genixia noticed that the player was still getting button release events
+   because we didn't hijack them and that we never bound the last button in our
+   list due to an off-by-one count.
+ * Use the quick distance calculation instead of the iterative version. The
+   iteration blows up somewhere when python 1.5 is used instead of 2.x.
+
 Changes in v0.4
 
-* Popup messages didn't automatically continue popping up if it weren't for
-  other events that triggered a screen refresh.
-* Changed speed calculation, now we're averaging the actual speed towards the
-  next point on the route and use a smaller averaging factor.
-* Was testing for overflow in vfdlib_drawLine in the wrong place, large
-  negative numbers would still slip through.
-* Removed static buffers in formatdist and time_estimate.
-* Changed serial handling a bit, we pass character instead of line at a time
-  to the protocol specific handler. This made it easier to add other protocols.
-* Added code to handle Garmin and Trimble TSIP/TAIP protocols, but only
-  Garmin has been tested. You can start gpsapp [nmea|garmin|tsip|taip] to
-  select any specific protocol.
-
+ * Popup messages didn't automatically continue popping up if it weren't for
+   other events that triggered a screen refresh.
+ * Changed speed calculation, now we're averaging the actual speed towards the
+   next point on the route and use a smaller averaging factor.
+ * Was testing for overflow in vfdlib_drawLine in the wrong place, large
+   negative numbers would still slip through.
+ * Removed static buffers in formatdist and time_estimate.
+ * Changed serial handling a bit, we pass character instead of line at a time
+   to the protocol specific handler. This made it easier to add other protocols.
+ * Added code to handle Garmin and Trimble TSIP/TAIP protocols, but only
+   Garmin has been tested. You can start gpsapp [nmea|garmin|tsip|taip] to
+   select any specific protocol.
 
 Changes in v0.3
 
-* There was a clipping problem in vfdlib_drawLine where it was writing bits
-  outside of the display area. The fix I had implemented was very hardhanded
-  by simply checking every single pixel. Figured out where the integer
-  overflow occured and replaced the hack with a far cleaner (and somewhat
-  faster) solution that simply avoids drawing the lines that cause the
-  overflow.
-* Doing a weighted average over the approximate past 2-4 minutes of speed
-  measurements (depending on GPS reporting rate). The previous way of using
-  the gps speed estimate directly made ETA/ETE calculations mostly unusable.
+ * There was a clipping problem in vfdlib_drawLine where it was writing bits
+   outside of the display area. The fix I had implemented was very hardhanded
+   by simply checking every single pixel. Figured out where the integer
+   overflow occured and replaced the hack with a far cleaner (and somewhat
+   faster) solution that simply avoids drawing the lines that cause the
+   overflow.
+ * Doing a weighted average over the approximate past 2-4 minutes of speed
+   measurements (depending on GPS reporting rate). The previous way of using
+   the gps speed estimate directly made ETA/ETE calculations mostly unusable.
 

@@ -41,11 +41,15 @@ char *formatdist(char *buf, const unsigned int dist)
 	if (dist < 1000)
 	    sprintf(buf, "%um ", dist);
 	else {
-	    unsigned int hectameters = dist / 100;
-	    if (hectameters < 1000)
-		sprintf(buf, "%u.%ukm", hectameters / 10, hectameters % 10);
+	    unsigned int decameters = dist / 10;
+	    if (decameters < 1000)
+		sprintf(buf, "%u.%02ukm", decameters / 100,
+			decameters % 100);
+	    else if (decameters < 10000)
+		sprintf(buf, "%u.%ukm", decameters / 100,
+			(decameters / 10) % 10);
 	    else
-		sprintf(buf, "%ukm", hectameters / 10);
+		sprintf(buf, "%ukm", decameters / 100);
 	}
     } else {
 	if (dist < 161) // ~ 0.1 mile, 305 would be ~1000 feet
@@ -53,11 +57,11 @@ char *formatdist(char *buf, const unsigned int dist)
 	else {
 	    unsigned int centimiles = (dist * 1000) / 16093; // .44
 	    if (centimiles < 1000)
-		sprintf(buf, "%u.%umi", centimiles / 100, centimiles % 100);
+		sprintf(buf, "%u.%02umi", centimiles / 100, centimiles % 100);
 	    else if (centimiles < 10000)
 		sprintf(buf, "%u.%umi", centimiles / 100, (centimiles/10) % 10);
 	    else
-		sprintf(buf, "%umi", centimiles / 10);
+		sprintf(buf, "%umi", centimiles / 100);
 	}
     }
     return buf;
@@ -77,7 +81,7 @@ char *time_estimate(char *buf, const unsigned int dist)
 
 	    hour = tm->tm_hour;
 	    min  = tm->tm_min;
-	    sprintf(buf, "%02d:%02d", hour, min);
+	    sprintf(buf, "%02dh%02d", hour, min);
 	} else
 	    sprintf(buf, "00m00");
 	return buf;
@@ -97,7 +101,7 @@ char *time_estimate(char *buf, const unsigned int dist)
 	hour = tm->tm_hour;
 	min  = tm->tm_min;
 
-	sprintf(buf, "%02d:%02d", hour, min);
+	sprintf(buf, "%02dh%02d", hour, min);
     } else {
 	min  = sec / 60;
 	sec -= min * 60;
@@ -105,7 +109,7 @@ char *time_estimate(char *buf, const unsigned int dist)
 	min -= hour * 60;
 
 	if (hour >= 100) sprintf(buf, "**:**");
-	else if (hour)   sprintf(buf, "%02d:%02d", hour, min);
+	else if (hour)   sprintf(buf, "%02dh%02d", hour, min);
 	else	         sprintf(buf, "%02dm%02d", min, (int)sec);
     }
 

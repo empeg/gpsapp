@@ -21,6 +21,11 @@ void track_init(void)
 
 void track_pos(void)
 {
+    /* no need to log the same position multiple times */
+    if (tracklog[tracklog_idx].x == gps_coord.xy.x && 
+	tracklog[tracklog_idx].y == gps_coord.xy.y)
+	return;
+
     tracklog[tracklog_idx++] = gps_coord.xy;
     if (tracklog_size < MAX_TRACK) tracklog_size++;
     if (tracklog_idx == MAX_TRACK) tracklog_idx = 0;

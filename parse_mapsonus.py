@@ -6,7 +6,7 @@ from convert import *
 class Wpoint:
     def __init__(self, coord, desc = "", dist = 0):
 	self.coord = coord
-	self.desc = desc
+	self.desc = string.strip(desc)
 	self.dist = dist
 
 def NAD27toWGS84(coord):
@@ -107,12 +107,12 @@ for wp in wpoints:
 dist = 0.0
 for i in range(len(wpoints)-1, 0, -1):
     wpoints[i].dist = dist
-    dist = dist + Distance(wpoints[i].coord, wpoints[i-1].coord, Datum_WGS84) 
+    dist = dist + Quick_Distance(wpoints[i].coord, wpoints[i-1].coord, Datum_WGS84) 
 wpoints[0].dist = dist
 
 
 import struct
-out = open("route", "w")
+out = open("route", "wb")
 
 DEGTOINT = ((1L<<31)-1) / 180.0
 #print "hdr %f %f %d %d" % (center.lat, center.long, len(wpoints), wps)

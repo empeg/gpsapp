@@ -151,7 +151,7 @@ static int nmea_time(char **p)
 	return skip(p);
 
     (*p)++;
-    sec = strtol(*p, p, 10);
+    sec = strtod(*p, p);
     if (**p != ',')
 	return skip(p);
 
@@ -311,11 +311,11 @@ int nmea_decode(char xor, struct gps_state *gps)
 	if (tmp.bearing_set)
 		tmp.bearing = degtorad(b);
     } else if (memcmp(&packet[1], "GPVTG", 5) == 0) {
-	/* $GPVTG,bear,magnbear,knot-speed,kph-speed* */
-	tmp.bearing_set    = nmea_float(&p, &b);
-	skip(&p);
-	skip(&p);
-	tmp.speed_set      = nmea_float(&p, &tmp.speed);
+	/* $GPVTG,bear,T,magnbear,M,knot-speed,N,kph-speed,K* */
+	tmp.bearing_set = nmea_float(&p, &b); skip(&p);
+	skip(&p); skip(&p);
+	skip(&p); skip(&p);
+	tmp.speed_set   = nmea_float(&p, &tmp.speed);
 
 	if (tmp.bearing_set)
 		tmp.bearing = degtorad(b);

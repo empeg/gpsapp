@@ -36,11 +36,14 @@ int empeg_init(void)
 
 int empeg_waitmenu(void)
 {
-    const unsigned long buttons[] = { 8,
-	/* front panel buttons (8) */
-	IR_TOP_BUTTON_PRESSED, IR_RIGHT_BUTTON_PRESSED, IR_LEFT_BUTTON_PRESSED,
+    const unsigned long buttons[] = { 13,
+	/* front panel buttons (12) */
+	IR_TOP_BUTTON_PRESSED, IR_TOP_BUTTON_RELEASED,
+	IR_RIGHT_BUTTON_PRESSED, IR_RIGHT_BUTTON_RELEASED,
+	IR_LEFT_BUTTON_PRESSED, IR_LEFT_BUTTON_RELEASED,
 	IR_BOTTOM_BUTTON_PRESSED, IR_BOTTOM_BUTTON_RELEASED,
-	IR_KNOB_PRESSED, IR_KNOB_RIGHT, IR_KNOB_LEFT
+	IR_KNOB_PRESSED, IR_KNOB_RELEASED,
+	IR_KNOB_RIGHT, IR_KNOB_LEFT
     };
     const struct hijack_geom_s fullscreen = {
 	0, EMPEG_SCREEN_ROWS - 1,
