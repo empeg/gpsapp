@@ -93,7 +93,7 @@ config_ini_option (char *s, char *match, int *inside)
 	  /* Special handling for "serialport" */
 	  if (!strcmp(match, "routedir")) {
 	    int sz = (eof-(f+1)); /* reserve \0 */
-	    serport=(char *)malloc(sz);
+	    routedir=(char *)malloc(sz);
 	    strncpy(routedir, (char *)f+1, sz); /* maybe no \0 */
 	    routedir[sz] = '\0'; 
 	    return 0;
