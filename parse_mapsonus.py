@@ -6,6 +6,9 @@ from convert import *
 # we can relatively easily regenerate all (or most) of this information
 discard="((Start|End)\sPoint|FOLLOW|CONTINUE|BEARS?|TURN|SHARPLY|LEFT|RIGHT|onto|as road goes into|as it|Head\s(NORTH|WEST|EAST|SOUTH)\son)\s?"
 
+# words that commonly start a new line
+sol="(START|PLAN-DESCR|TURN\s+\d+|TURN-STREET|FORMAT-TYPE|MATCH-LOCAL-MAP|END|KM)\s"
+
 class Wpoint:
     def __init__(self, coord, desc = ""):
 	self.coord = coord
@@ -24,51 +27,49 @@ def parse(mapsonus_rawroute):
     route = {}
     coords = []
     next_point = 0
-    while 1:
-	line = f.readline()
-	if not line: break
+    desc = re.sub("(\r|\n)", " ", f.read())
+    lines = re.split(sol, desc)
+    lines = lines[1:]
+    while lines:
+	parts = [ lines[0] ] + string.split(lines[1])
+	lines = lines[2:]
 
-	if state == "R":
-	    parts = string.split(line)
-	    if parts[0] in ["START", "INT", "END"]:
-		long = float(parts[1])
-		lat  = float(parts[2])
-		mark = parts[3]
-		desc = string.join(parts[4:])
-		route[next_point-1] = \
-		    Wpoint(NAD27toWGS84(Coord(lat, long)), desc)
-		continue
-	    elif parts[0] == "TURN":
-		#idx = int(parts[1])
-		long = float(parts[2])
-		lat  = float(parts[3])
-		pnt  = int(parts[4])
-		npts = int(parts[5])
-		turn = int(parts[6])
-		#outhdg = int(parts[7])
-		#inhdg  = int(parts[8])
-		#km     = float(parts[9])
-		desc = string.join(parts[10:])
-		if pnt != next_point:
-		    print "parse error?"
-		route[pnt] = Wpoint(NAD27toWGS84(Coord(lat, long)), desc)
-		next_point = pnt + npts
-		continue
-	elif state == "S":
-	    line = re.sub("<.+?>", "", line)
-	    parts = string.split(line)
+	if parts[0] in ["START", "INT", "END"]:
+	    print parts
+	    long = float(parts[1])
+	    lat  = float(parts[2])
+	    mark = parts[3]
+	    desc = string.join(parts[4:])
+	    route[next_point-1] = \
+		Wpoint(NAD27toWGS84(Coord(lat, long)), desc)
+	    continue
+	elif parts[0][:5] == "TURN ":
+	    #idx = int(parts[0][5:])
+	    long = float(parts[1])
+	    lat  = float(parts[2])
+	    pnt  = int(parts[3])
+	    npts = int(parts[4])
+	    turn = int(parts[5])
+	    #outhdg = int(parts[6])
+	    #inhdg  = int(parts[7])
+	    #km     = float(parts[8])
+	    desc = string.join(parts[9:])
+	    if pnt != next_point:
+		print "parse error?"
+	    route[pnt] = Wpoint(NAD27toWGS84(Coord(lat, long)), desc)
+	    next_point = pnt + npts
+	    continue
+	elif parts[0] == "KM":
+	    while parts[0] != "<xmp>":
+		parts = parts[1:]
+	    parts = parts[1:]
 	    try:
 		for i in range(0, len(parts), 2):
-		    lat  = float(parts[i+1])
+		    lat  = float(re.sub("</xmp>", "", parts[i+1]))
 		    long = float(parts[i])
 		    coords.append(NAD27toWGS84(Coord(lat, long)))
 	    except (IndexError, ValueError):
 		continue
-
-	if not state and re.search("Route Turn Information", line):
-	    state = "R"
-	elif state == "R" and re.search("Route Shape Points", line):
-	    state = "S"
 
     # create a route as a combination of 'shape' and 'turn' information
     # make sure we discard duplicate records.
