@@ -69,7 +69,7 @@ char *time_estimate(const unsigned int dist)
     int hour, min, sec = 0;
 
     if (dist && gps_speed)
-	sec = ((dist * 3600) / gps_speed);
+	sec = ((dist * 3600) / (gps_speed >> 8));
 
     if (!dist || gps_speed) {
 	if (show_abs) {

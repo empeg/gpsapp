@@ -54,10 +54,16 @@ static void new_measurement(const struct gps_info *tmp)
 	else
 	    gps_bearing = bearing(&last_coord, &gps_coord.xy);
 
-	if (cur.speed_set)
-	    gps_speed = (int)(cur.speed * 1000);
-	else
-	    gps_speed = 0;
+	if (cur.speed_set) {
+	    /* This weighted average calculation takes approximately the last
+	     * 128 samples into account and with the about 1 sample every 2
+	     * seconds that my GPS generates, this is about 4 minutes */
+	    if (gps_speed)
+		gps_speed += ((int)(cur.speed * 1000.0) - (gps_speed >> 8));
+	    else
+		/* no averaged estimate, just set the current speed */
+		gps_speed = (int)(cur.speed * 1000.0) << 8;
+	}
 
 	gps_time = cur.timestamp + cur.datestamp;
 

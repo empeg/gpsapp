@@ -42,7 +42,7 @@ Installation
 
   Routes are preprocessed on the desktop because we have to map from
   geodetic coordinates in the NAD27 CONUS datum to a transverse mercator
-  projection in the WGS85 (gps) datum. Which involves a lot of floating
+  projection in the WGS84 (gps) datum. Which involves a lot of floating
   point operations that are dreadfully slow on the empeg. About 3 sec.
   to project ~1200 points from geodetic to TM even if the datum
   conversion was already done before. Without the projection we can draw

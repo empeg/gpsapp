@@ -1,0 +1,32 @@
+* The current method for figuring where we are in a route often
+  incorrectly picks the wrong waypoint.
+
+* Display current speed/averaged speed/magnetic north/GPS time.
+  Probably not really enough room on the display for too much more
+  information.
+
+* Use the bearing pointer as a compass when no route is loaded.
+  (Need a way to discard the current route then...)
+
+* Make menu code a bit more structured and the final menus nicer on
+  the eye.
+
+* Cleanup python scripts.
+
+* Automatically generate the 'Continue onto, bear left/right,
+  left/right, sharp left/right based on the direction in which we
+  approach and leave a waypoint. This allows us to simplify the
+  descriptions and to correct them when we're approaching a route
+  from a different direction.
+
+* Tiger/Line dataset to street level map conversion.
+
+* Other than NMEA gps interfacing code (Earthmate/Tripmate/Trimble/Oncore/
+  Garmin/Magellan/gpsd?).
+
+* Can we derive the local timezone offset from the GPS data in some way?
+
+* Actually try to do on-the-fly routing based on the Tiger/Line mapdata.
+  Although they don't contain one-way street information, however if we
+  can reroute dynamically that should only be a minor problem.
+

@@ -405,6 +405,10 @@ void vfdlib_drawLineClipped(char *buffer, int x0, int y0, int x1, int y1,
   int distToHEntry, distToVEntry, distToHExit, distToVExit, xDelta, yDelta;
   int dyAbs, xMax, yMax;
 
+  /* avoid overflow on extremely long lines by simply not drawing them */
+  if (dx >= 0xffff || dy >= 0xffff)
+      return;
+
   /* make sure x is positive */
   if (dx < 0) {
     /* swap points */ 
@@ -1917,7 +1921,6 @@ static void drawLineHMaxClipped(char *buffer, int x0, int y0, int dx, int dy,
   int hiPixel = 0;
   char hiShade = shade << 4;
   char biShade = shade | hiShade;
-  char *bstart = buffer;
 
   if (dy > 0) addV = VFD_BYTES_PER_SCANLINE;
   else {
@@ -1939,10 +1942,6 @@ static void drawLineHMaxClipped(char *buffer, int x0, int y0, int dx, int dy,
       d += incrH;
       pixelPos++;
       if (pixelPos == 2) {
-        if (buffer - bstart < 0 ||
-	    buffer - bstart >= VFD_WIDTH * VFD_BYTES_PER_SCANLINE) {
-	    //fprintf(stderr, "clip!\n");
-	} else
 	if (loPixel && hiPixel) {
 	  *buffer = biShade;
 	} else if (loPixel) {
@@ -1963,10 +1962,6 @@ static void drawLineHMaxClipped(char *buffer, int x0, int y0, int dx, int dy,
       d += incrHV;
       
       /* draw outstanding pixels */
-      if (buffer - bstart < 0 ||
-	  buffer - bstart >= VFD_WIDTH * VFD_BYTES_PER_SCANLINE) {
-	  //fprintf(stderr, "clip!\n");
-      } else
       if (loPixel && hiPixel) {
 	*buffer = biShade;
       } else if (loPixel) {
@@ -1996,10 +1991,6 @@ static void drawLineHMaxClipped(char *buffer, int x0, int y0, int dx, int dy,
   }
   
   /* draw outstanding pixels */
-  if (buffer - bstart < 0 ||
-      buffer - bstart >= VFD_WIDTH * VFD_BYTES_PER_SCANLINE) {
-      //fprintf(stderr, "clip!\n");
-  } else
   if (loPixel && hiPixel) {
     *buffer = biShade;
   } else if (loPixel) {
@@ -2017,7 +2008,6 @@ static void drawLineVMaxClipped(char *buffer, int x0, int y0, int dx, int dy,
   int incrV, incrHV, addV;
   int pixelPos = x0 & 0x1;
   char hiShade = shade << 4;
-  char *bstart = buffer;
 
   if (dy > 0) addV = VFD_BYTES_PER_SCANLINE;
   else {
@@ -2030,10 +2020,6 @@ static void drawLineVMaxClipped(char *buffer, int x0, int y0, int dx, int dy,
   buffer += (y0 << 6) + (x0 >> 1);
 
   /* write initial pixel */
-  if (buffer - bstart < 0 ||
-      buffer - bstart >= VFD_WIDTH * VFD_BYTES_PER_SCANLINE) {
-      //fprintf(stderr, "clip!\n");
-  } else
   if (pixelPos == 0) {
     *buffer &= MASK_HI_NYBBLE;
     *buffer |= shade;
@@ -2060,10 +2046,6 @@ static void drawLineVMaxClipped(char *buffer, int x0, int y0, int dx, int dy,
     buffer += addV;
 
     /* write pixel */
-    if (buffer - bstart < 0 ||
-	buffer - bstart >= VFD_WIDTH * VFD_BYTES_PER_SCANLINE) {
-	//fprintf(stderr, "clip!\n");
-    } else
     if (pixelPos == 0) {
       *buffer &= MASK_HI_NYBBLE;
       *buffer |= shade;

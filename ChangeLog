@@ -1,0 +1,12 @@
+Changes in v0.3
+
+* There was a clipping problem in vfdlib_drawLine where it was writing bits
+  outside of the display area. The fix I had implemented was very hardhanded
+  by simply checking every single pixel. Figured out where the integer
+  overflow occured and replaced the hack with a far cleaner (and somewhat
+  faster) solution that simply avoids drawing the lines that cause the
+  overflow.
+* Doing a weighted average over the approximate past 2-4 minutes of speed
+  measurements (depending on GPS reporting rate). The previous way of using
+  the gps speed estimate directly made ETA/ETE calculations mostly unusable.
+
