@@ -1,5 +1,0 @@
-#!/bin/sh
-
-[ -x /programs0/incar ] && /programs0/incar || exit
-[ -x /programs0/gpsapp ] && /programs0/gpsapp
-
