@@ -8,6 +8,7 @@
 #define _GPSAPP_H_
 
 #include <sys/time.h>
+#include <math.h>
 #include "gps_protocol.h"
 
 /* configuration settings */
@@ -29,7 +30,11 @@ struct coord {
 };
 
 /* route waypoints */
-struct wp { int idx; char *desc; };
+struct wp {
+    int idx;
+    char *short_desc;
+    short inhdg, outhdg;
+};
 
 struct route {
     int	npts;
@@ -44,9 +49,9 @@ extern int do_refresh;
 extern struct coord coord_center;
 
 /* conversion functions (convert.c) */
-double degtorad(const double deg);
-double intdegtorad(const int deg);
-double radtodeg(const double rad);
+#define degtorad(deg) (deg * ((2.0 * M_PI) / 360.0))
+#define radtodeg(rad) (rad * (360.0 / (2.0 * M_PI)))
+
 char *formatdist(char *buf, const unsigned int distance);
 char *time_estimate(char *buf, const unsigned int distance);
 

@@ -1,17 +1,11 @@
-struct header {
-    int center_lat; /* route center latitude   2^31/180 */
-    int center_lon; /* route center longtitude 2^31/180 */
-    unsigned int npts;	    /* number of points */
-    unsigned int nwps;	    /* number of turn descriptions */
-} header;
-struct coord {
-    int x; /* meters from center */
-    int y; /* meters from center */
-    unsigned int dist; /* meters to end point */
-} pts[npts];
-struct wp {
-    unsigned int idx;        /* index into pts array */
-    unsigned int len;        /* strlen(desc); */
-    char desc[len]; /* turn information */
-} wps[nwps]
+<route center latitude> <route center longtitude> <# points> <# waypoints>
+<point x> <point y> [<description>]
+...
 
+where,
+
+route center lat & long are floating point degrees in the WGS 84 datum.
+# of points is how many points the complete route consists of.
+# of waypoints is how many points have additional driving directions.
+point x & y are distance in meters from the center of the map.
+description is optional and should typically just contain the road name.

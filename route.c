@@ -13,7 +13,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
 #include "gpsapp.h"
 #include "vfdlib.h"
 
@@ -91,31 +90,16 @@ void route_select(int updown)
 
 void route_load(void)
 {
-    char file[PATH_MAX];
-
-    struct disk_hdr {
-	int center_lat;
-	int center_lon;
-	unsigned int npts;
-	unsigned int nwps;
-    } hdr;
-    struct disk_pnt {
-	int x;
-	int y;
-	unsigned int dist;
-    } pnt;
-    struct disk_wp {
-	unsigned int idx;
-	unsigned int len;
-    } wp;
-    int fd = -1, i, len;
+    char buf[PATH_MAX], *p;
+    FILE *f;
+    int i, j, len;
     
     if (!routes || selected_route < 0 || selected_route >= nroutes)
 	return;
 
-    strcpy(file, ROUTE_DIR);
-    strcat(file, "/");
-    strcat(file, routes[selected_route]);
+    strcpy(buf, ROUTE_DIR);
+    strcat(buf, "/");
+    strcat(buf, routes[selected_route]);
 
     for (i = 0; i < nroutes; i++)
 	free(routes[i]);
@@ -123,43 +107,85 @@ void route_load(void)
     routes = NULL;
     nroutes = 0;
 
-    fd = open(file, O_RDONLY);
-    if (fd == -1) return;
+    f = fopen(buf, "r");
+    if (!f) return;
 
     route_init();
 
-    read(fd, &hdr, sizeof(hdr));
-    coord_center.lat = intdegtorad((double)hdr.center_lat);
-    coord_center.lon = intdegtorad((double)hdr.center_lon);
-    route.npts = hdr.npts;
-    route.nwps = hdr.nwps;
+    draw_clear();
+    draw_msg("Loading");
+    draw_display();
 
-    /* any logged points are in the wrong coordinate system. */
+    fgets(buf, PATH_MAX, f); p = buf;
+    coord_center.lat = degtorad(strtod(p, &p));
+    coord_center.lon = degtorad(strtod(p, &p));
+    route.npts = strtol(p, &p, 10);
+    route.nwps = strtol(p, &p, 10);
+
+    if (!route.npts) goto done;
+
+    /* Any previously logged points are probably based on the wrong center
+     * coordinate. */
     track_init();
 
     route.pts = malloc(route.npts * sizeof(struct coord));
     route.dists = malloc(route.npts * sizeof(int));
-
-    if (!route.npts) goto done;
-    for (i = 0; i < route.npts; i++) {
-	read(fd, &pnt, sizeof(pnt));
-	route.pts[i].x = pnt.x;
-	route.pts[i].y = pnt.y;
-	route.dists[i] = pnt.dist;
-    }
-
-    if (!route.nwps) goto done;
     route.wps = malloc(route.nwps * sizeof(struct wp));
-    for (i = 0; i < route.nwps; i++) {
-	read(fd, &wp, sizeof(wp));
-	route.wps[i].idx = wp.idx;
-	len = wp.len;
-	route.wps[i].desc = malloc(len + 1);
-	read(fd, route.wps[i].desc, len);
-	route.wps[i].desc[len] = '\0';
+    /* malloc's don't fail right :) */
+    if (!route.pts || !route.dists || !route.wps) {
+	err("Failed allocation for route");
+	if (route.pts) free(route.pts);
+	if (route.dists) free(route.dists);
+	if (route.wps) free(route.wps);
+	route.pts = NULL; route.dists = NULL; route.wps = NULL;
+	route.npts = route.nwps = 0;
+	fclose(f);
+	goto done;
     }
+
+    for (i = 0, j = 0; i < route.npts; i++) {
+	fgets(buf, PATH_MAX, f); p = buf;
+	len = strlen(buf);
+	if (buf[len-1] == '\n') buf[--len] = '\0';
+	if (buf[len-1] == '\r') buf[--len] = '\0';
+	if (buf[len-1] == ' ') buf[--len] = '\0';
+	route.pts[i].x = strtol(p, &p, 10);
+	route.pts[i].y = strtol(p, &p, 10);
+	if (p < buf + len) {
+	    if (j == route.nwps) {
+		err("Too many waypoints?");
+		for (i = 0; i < j; i++)
+		    free(route.wps[i].short_desc);
+		free(route.pts); free(route.dists); free(route.wps);
+		route.pts = NULL; route.dists = NULL; route.wps = NULL;
+		route.npts = route.nwps = 0;
+		goto done;
+	    }
+	    route.wps[j].idx = i;
+	    route.wps[j++].short_desc = strdup(p+1);
+	}
+    }
+
+    draw_clear();
+    draw_msg("Pre-computing values");
+    draw_display();
+
+    /* now calculate the distances */
+    route.dists[route.npts-1] = 0;
+    for (i = route.npts-2; i >= 0; i--)
+	route.dists[i] = route.dists[i+1] + 
+	    sqrt(distance2(&route.pts[i], &route.pts[i+1]));
+
+    for (i = 0; i < route.nwps; i++) {
+	int idx = route.wps[i].idx;
+	if (idx > 0 && idx < route.npts-1) {
+	    route.wps[i].inhdg = radtodeg(bearing(&route.pts[idx-1], &route.pts[idx]));
+	    route.wps[i].outhdg = radtodeg(bearing(&route.pts[idx], &route.pts[idx+1]));
+	}
+    }
+
 done:
-    close(fd);
+    fclose(f);
 }
 
 void route_init(void)
@@ -167,8 +193,8 @@ void route_init(void)
     int i;
 
     for (i = 0; i < route.nwps; i++)
-	if (route.wps[i].desc)
-	    free(route.wps[i].desc);
+	if (route.wps[i].short_desc)
+	    free(route.wps[i].short_desc);
 
     if (route.nwps)
 	free(route.wps);
@@ -310,8 +336,51 @@ int route_getwp(const int wp, struct xy *pos, unsigned int *dist, char **desc)
 	*dist = abs(total_dist - route.dists[idx]);
     }
 
-    if (desc)
-	*desc = route.wps[wpidx].desc;
+    if (desc) {
+	static char buf[80];
+	char *short_desc;
+
+	/* Restore the full description,
+	 * '[continue|bear|turn] [sharply] [left|right] onto foo' */
+	idx = route.wps[wpidx].idx;
+	short_desc = route.wps[wpidx].short_desc;
+
+	if (idx == route.npts-1)
+	    sprintf(buf, "End at %s", short_desc);
+	else if (idx == 0)
+	    sprintf(buf, "Start at %s", short_desc);
+	else
+	{
+	    short inhdg, outhdg, turn;
+	    char *heading, *strong;
+
+	    if (idx == minidx)
+		 inhdg = bearing(&gps_coord.xy, &route.pts[idx]);
+	    else inhdg = route.wps[wpidx].inhdg;
+
+	    outhdg = route.wps[wpidx].outhdg;
+	    turn = outhdg - inhdg;
+	    if (turn < -180) turn += 360;
+	    if (turn >= 180) turn -= 360;
+
+	    if (turn < 0.0) {
+		heading = "LEFT";
+		turn = -turn;
+	    } else
+		heading = "RIGHT";
+
+	    strong = turn > 130 ? "sharply " : "";
+
+	    if (turn <= 5)
+		sprintf(buf, "Continue onto %s", short_desc);
+	    else if (turn <= 55)
+		sprintf(buf, "Bear %s onto %s", heading, short_desc);
+	    else
+		sprintf(buf, "Turn %s%s onto %s", strong, heading, short_desc);
+	}
+
+	*desc = buf;
+    }
 
     return 1;
 }

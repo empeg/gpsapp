@@ -6,7 +6,6 @@
 
 #include <stdio.h>
 #include <unistd.h>
-#include <math.h>
 #include "vfdlib.h"
 #include "empeg_ui.h"
 #include "gpsapp.h"
@@ -251,14 +250,14 @@ void draw_wpstext(void)
 {
     static int topwp = 0;
     static int hoff, voff, lost, dir = 1;
-    int i, n = 4, check = 0, offset = 0;
+    int i, n = 4, offset = 0;
     char *desc;
 #define SHIFT 27
 
     if (topwp < nextwp) { // scroll towards next entry
 	voff++;
 	if (voff >= h0+1) {
-	    topwp++; check = 1;
+	    topwp++;
 	    voff = 0;
 	} else {
 	    n = 5;
@@ -266,7 +265,7 @@ void draw_wpstext(void)
 	}
     }
     else if (!voff && topwp > nextwp) { // scroll towards previous entry
-	topwp--; check = 1;
+	topwp--;
 	voff = h0+1;
 	n = 5;
 	do_refresh = 1;
@@ -278,26 +277,12 @@ void draw_wpstext(void)
 	}
     }
 
-    if (check) {
-	lost = 0;
-	i = 0;
-
-	/* scroll when only first, or when any entry, is too large */
-	//for (; i < n; i++)
-	for (; i < 1; i++)
-	{
-	    int tmp;
-	    if (!route_getwp(topwp + i, NULL, NULL, &desc))
-		break;
-
-	    tmp = SHIFT + vfdlib_getTextWidth(desc, 0) - VFD_WIDTH;
-
-	    if (tmp <= lost)
-		continue;
-
-	    lost = tmp;
-	}
+    lost = 0;
+    if (route_getwp(topwp, NULL, NULL, &desc)) {
+	int tmp = SHIFT + vfdlib_getTextWidth(desc, 0) - VFD_WIDTH;
+	if (tmp > lost) lost = tmp;
     }
+
     // swap scroll direction
     if (hoff >= lost + 5) dir = -1;
     else if (hoff <= -5)  dir = 1;

@@ -3,10 +3,13 @@
 import string, re, sys
 from convert import *
 
+# we can relatively easily regenerate all (or most) of this information
+discard="((Start|End)\sPoint|FOLLOW|CONTINUE|BEARS?|TURN|SHARPLY|LEFT|RIGHT|onto|as road goes into|as it|Head\s(NORTH|WEST|EAST|SOUTH)\son)\s?"
+
 class Wpoint:
     def __init__(self, coord, desc = "", dist = 0):
 	self.coord = coord
-	self.desc = string.strip(desc)
+	self.desc = string.strip(re.sub(discard, "", desc))
 	self.dist = dist
 
 def NAD27toWGS84(coord):
@@ -112,23 +115,18 @@ wpoints[0].dist = dist
 
 
 import struct
-out = open("route", "wb")
+out = open("route", "w")
 
 DEGTOINT = ((1L<<31)-1) / 180.0
 #print "hdr %f %f %d %d" % (center.lat, center.long, len(wpoints), wps)
 #print "hdr %d %d %d %d" % (center.lat * DEGTOINT, center.long * DEGTOINT, len(wpoints), wps)
-buf = struct.pack("<iiII", int(center.lat * DEGTOINT), int(center.long * DEGTOINT), len(wpoints), wps)
+#buf = struct.pack("<iiII", int(center.lat * DEGTOINT), int(center.long * DEGTOINT), len(wpoints), wps)
+buf = "%.6f %.6f %d %d\n" % (center.lat, center.long, len(wpoints), wps)
 out.write(buf)
 for wp in wpoints:
     #print "pts %.8f %.8f %d" % (wp.coord.lat, wp.coord.long, wp.dist)
-    buf = struct.pack("<iiI", wp.xy[0], wp.xy[1], wp.dist)
-    out.write(buf)
-
-for i in range(len(wpoints)):
-    if not wpoints[i].desc:
-	continue
-    #print "wps %d %s" % (i, wpoints[i].desc)
-    buf = struct.pack("<II", i, len(wpoints[i].desc)) + wpoints[i].desc
+    #buf = struct.pack("<iiI", wp.xy[0], wp.xy[1], wp.dist)
+    buf = "%d %d %s\n" % (wp.xy[0], wp.xy[1], wp.desc)
     out.write(buf)
 
 out.close()

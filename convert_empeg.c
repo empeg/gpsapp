@@ -6,7 +6,6 @@
 
 #include <stdio.h>
 #include <time.h>
-#include <math.h>
 #include "gpsapp.h"
 
 #define WGS84_a    6378137.0
@@ -16,21 +15,6 @@
 int stats_toTM;
 int stats_distance;
 int stats_bearing;
-
-double degtorad(const double deg)
-{
-    return deg * ((2.0 * M_PI) / 360.0);
-}
-
-double intdegtorad(const int deg)
-{
-    return (double)deg * (M_PI / (double)0x7fffffff);
-}
-
-double radtodeg(const double rad)
-{
-    return rad * (360.0 / (2.0 * M_PI));
-}
 
 /* buf needs to be at least 10 characters */
 char *formatdist(char *buf, const unsigned int dist)

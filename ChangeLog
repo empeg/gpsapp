@@ -1,3 +1,12 @@
+Changes in v0.6
+
+ * Using ascii route description file.
+ * Always check line length for overflow, otherwise we forget to scroll when a
+   new route is loaded and the new top entry is too long.
+ * Stripping turn directions from the waypoint descriptions and dynamically
+   generate them whenever displaying. This way we can correct the instructions
+   even when approaching a waypoint from a different direction.
+
 Changes in v0.5
 
  * Changed NMEA parser to accept floats in the time field. My idea of the
@@ -35,4 +44,8 @@ Changes in v0.3
  * Doing a weighted average over the approximate past 2-4 minutes of speed
    measurements (depending on GPS reporting rate). The previous way of using
    the gps speed estimate directly made ETA/ETE calculations mostly unusable.
+
+Changes in v0.2
+
+ * First official release.
 

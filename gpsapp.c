@@ -9,7 +9,6 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <errno.h>
-#include <math.h>
 #include "empeg_ui.h"
 #include "vfdlib.h"
 #include "gpsapp.h"
