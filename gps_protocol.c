@@ -4,7 +4,8 @@ void new_sat(struct gps_state *gps, int svn, int time, double elv, double azm, i
 {
     int i, old, old_time = 0;
 
-    if (!svn) return;
+    /* only accept updates for the 32 typically GPS satellites */
+    if (svn < 1 || svn > 32) return;
 
     for (i = 0; i < MAX_TRACKED_SATS; i++)
 	if (gps->sats[i].svn == svn)
