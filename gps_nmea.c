@@ -399,10 +399,21 @@ restart:
 
 static void nmea_init(void)
 {
+  char buf[40];
+  time_t t;
+  struct tm *tm;
+
+  t = time(NULL);
+  tm = gmtime(&t);
+
   serial_send("$PMOTG,GGA,0001\r\n", 17);
   serial_send("$PMOTG,RMC,0001\r\n", 17);
   serial_send("$PMOTG,GSA,0001\r\n", 17);
   serial_send("$PMOTG,GSV,0001\r\n", 17);
+  snprintf(buf, 40, "$PRWIINIT,V,,,,,,,,,,,,%02d%02d%02d,%02d%02d%02d\r\n",
+	  tm->tm_hour, tm->tm_min, tm->tm_sec,
+	  tm->tm_mday, tm->tm_mon + 1, tm->tm_year);
+  serial_send(buf, 38);
 }
 
 REGISTER_PROTOCOL("NMEA", 4800, 'N', nmea_init, NULL, nmea_update);

@@ -1,3 +1,8 @@
+Changes in v0.15
+
+ * From Derrick, send current time to Streetpilot receivers which should
+   improve getting the initial lock.
+
 Changes in v0.14
 
  * Messed up E/W and '/" marks in the coordinates.

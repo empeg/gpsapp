@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
 #include "vfdlib.h"
 #include "empeg_ui.h"
 #include "gps_protocol.h"
