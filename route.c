@@ -256,7 +256,6 @@ void route_update_vmg(void)
 
 void route_skipwp(int dir)
 {
-    int prev;
     nextwp += dir;
 
     if (nextwp >= route.nwps)
@@ -264,9 +263,8 @@ void route_skipwp(int dir)
     if (nextwp < 0)
 	nextwp = 0;
 
-    prev = nextwp - 1;
-    if (prev >= 0 && prev < route.nwps)
-	minidx = route.wps[prev].idx;
+    if (nextwp < route.nwps)
+	minidx = route.wps[nextwp].idx;
 }
 
 void route_locate(void)
@@ -295,7 +293,7 @@ void route_locate(void)
 
     /* ok we're really close now,
      * are there any points after the current one? */
-    if (minidx+1 < route.npts-1) {
+    if (minidx < route.npts - 2) {
 	/* and are we moving away from the point we just found? */
 	if (!towards(&gps_coord.xy, &route.pts[minidx], gps_bearing)) {
 	    minidx++;
@@ -313,7 +311,7 @@ void route_locate(void)
 
 void route_draw(struct xy *cur_pos)
 {
-    if (minidx < route.npts && nextwp < route.nwps) {
+    if (nextwp < route.nwps) {
 	int nextidx = route.wps[nextwp].idx;
 	draw_lines(route.pts, minidx+1, VFDSHADE_MEDIUM);
 	draw_line(cur_pos, &route.pts[minidx], VFDSHADE_BRIGHT);
