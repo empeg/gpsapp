@@ -41,5 +41,5 @@ clean: dist
 
 dist:
 	-rm -f gpsapp_host ${gpsapp_host_OBJS} ${gpsapp_OBJS} ${hack_init_OBJS}
-	-rm -f *.orig
+	-rm -f ${incar_OBJS} *.orig
 
