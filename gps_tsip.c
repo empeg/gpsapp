@@ -247,15 +247,15 @@ static void tsip_6D_sats_in_view(struct gps_state *gps)
     case 3: gps->fix = 2; break;
     default: break;
     }
-    gps->hdop = Double(&packet[6]);
+    gps->hdop = Single(&packet[6]);
 
-    nsvs = tmp >> 4;
+    nsvs = (tmp >> 4) & 0xf;
     if (packet_idx != 18 + nsvs) return;
 
     for (i = 0; i < MAX_TRACKED_SATS; i++)
 	gps->sats[i].used = 0;
     for (i = 0; i < nsvs; i++)
-	new_sat(gps, packet[17+1], UNKNOWN_TIME, UNKNOWN_ELV, UNKNOWN_AZM,
+	new_sat(gps, packet[17+i], UNKNOWN_TIME, UNKNOWN_ELV, UNKNOWN_AZM,
 		UNKNOWN_SNR, 1);
 
     gps->updated |= GPS_STATE_FIX;
