@@ -325,10 +325,10 @@ void route_draw(struct xy *cur_pos)
 {
     if (show_rubberband && minidx < route.npts && nextwp < route.nwps) {
 	int nextidx = route.wps[nextwp].idx;
-	draw_lines(route.pts, minidx, VFDSHADE_MEDIUM);
+	draw_lines(route.pts, minidx+1, VFDSHADE_MEDIUM);
 	draw_line(cur_pos, &route.pts[minidx], VFDSHADE_BRIGHT);
 	if (nextidx != minidx)
-	    draw_lines(&route.pts[minidx], nextidx - minidx, VFDSHADE_BRIGHT);
+	    draw_lines(&route.pts[minidx], (nextidx-minidx)+1, VFDSHADE_BRIGHT);
 	draw_lines(&route.pts[nextidx], route.npts - nextidx, VFDSHADE_MEDIUM);
     } else
 	draw_lines(route.pts, route.npts, VFDSHADE_MEDIUM);
