@@ -68,6 +68,15 @@ config_ini_option (char *s, char *match, int *inside)
 	  if (!strncasecmp((char *)f+1, "permanent", (eof-(f+1)))) {
 	    return 2;
 	  }	    
+	  if (!strncasecmp((char *)f+1, "sats", (eof-(f+1)))) {
+	    return 0;
+	  }	    
+	  if (!strncasecmp((char *)f+1, "map", (eof-(f+1)))) {
+	    return 1;
+	  }	    
+	  if (!strncasecmp((char *)f+1, "route", (eof-(f+1)))) {
+	    return 2;
+	  }	    
 	  if (!strncasecmp((char *)f+1, "true", (eof-(f+1)))) {
 	    return 1;
 	  }	    

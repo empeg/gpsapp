@@ -78,6 +78,26 @@ Installation
   Create a directory /programs0/routes on the empeg player and upload
   the route to any name you want.
 
+- Static configuration can be done in config.ini. Options go in a
+  [gpsapp] section, and are:
+  o visual: [sats|map|route]
+    select default visual mode
+  o metric: [true|false]           
+    select meters if true, miles if false
+  o gpscoords: [true|false]        
+    show latitude and longitude if true
+  o rubberband: [true|false]       
+    highlight route to next waypoint if true
+  o track: [true|false]            
+    display previously traversed track if true
+  o scale: [true|false]            
+    show map scale (in map mode) if true
+  o popups: [true|false|permanent] 
+    show waypoint text popups when near the waypoint if true, always if
+    permanent, never if false
+  o time: [true|false]             
+    show time to next waypoint if true, distance if false
+
 Short operating instructions
 
 - Select the entry "GPSapp" in the Hijack menu.

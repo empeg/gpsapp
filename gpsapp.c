@@ -306,6 +306,8 @@ init_gpsapp()
 	buf[bytes]='\0';
 	offset=CONFIG_HDRLEN; 
 	done+=bytes;
+	ret = config_ini_option (buf, "visual", &inside);
+	if (ret > -1 && ret < 3) show_visual = ret;
 	ret = config_ini_option (buf, "metric", &inside);
 	if (ret > -1 && ret < 2) show_metric = ret;
 	ret = config_ini_option (buf, "gpscoords", &inside);
