@@ -13,8 +13,8 @@
 #define DLE 0x10
 #define ETX 0x03
 
-static int datestamp, timestamp, sat_track_update;
-static int initialized, fix;
+static int datestamp, timestamp;
+static int initialized;
 
 static short INT16(char *p)
 {
@@ -41,17 +41,16 @@ static double Double(char *p)
     return u.v;
 }
 
-static void tsip_send(unsigned char id, char *buf, unsigned char len)
+static void tsip_send(char *buf, unsigned char len)
 {
     char cmd[16];
     int i, j = 0;
 
 #ifndef __arm__
-    fprintf(stderr, "sending %x\n", id);
+    fprintf(stderr, "sending %x\n", buf[0]);
 #endif
 
     cmd[j++] = DLE;
-    cmd[j++] = id;
     for (i = 0; i < len; i++) {
 	cmd[j++] = buf[i];
 	if (buf[i] == DLE)
@@ -63,45 +62,52 @@ static void tsip_send(unsigned char id, char *buf, unsigned char len)
     serial_send(cmd, j);
 }
 
+static void tsip_24_req_gps_fix(void)
+{
+    tsip_send("\x24", 1);
+}
+
 #if 0 /* a bit harsh, as the receiver needs to reacquire all satellites */
 static void tsip_25_softreset(void)
 {
-    tsip_send(0x25, NULL, 0);
+    tsip_send("\x25", 1);
 }
 #endif
 
 static void tsip_27_req_signal_levels(void)
 {
-    tsip_send(0x27, NULL, 0);
+    tsip_send("\x27", 1);
 }
 
 static void tsip_35_req_io_options(void)
 {
-    tsip_send(0x35, NULL, 0);
+    tsip_send("\x35", 1);
 }
 
 static void tsip_35_set_io_options(char *settings)
 {
-    char data[4];
+    char data[5];
 
-    data[0] = settings[0];
-    data[1] = settings[1];
-    data[2] = settings[2];
-    data[3] = settings[3];
+    data[0] = '\x35';
+    data[1] = settings[0];
+    data[2] = settings[1];
+    data[3] = settings[2];
+    data[4] = settings[3];
 
-    tsip_send(0x35, data, 4);
+    tsip_send(data, 5);
 }
 
 static void tsip_37_last_fix(void)
 {
-    tsip_send(0x37, NULL, 0);
+    tsip_send("\x37", 1);
 }
 
 static void tsip_3C_req_sat_track_status(void)
 {
-    char data = 0;
-    tsip_send(0x3C, &data, 1);
-    sat_track_update = datestamp + timestamp + 4;
+    char data[2];
+    data[0] = '\x3c';
+    data[1] = 0;
+    tsip_send(data, 2);
 }
 
 static void tsip_41_time(void)
@@ -129,7 +135,7 @@ static void tsip_45_version(void)
     initialized = 0;
 }
 
-static void tsip_46_health(void)
+static void tsip_46_health(struct gps_state *gps)
 {
     char status, hwstatus;
 
@@ -138,10 +144,14 @@ static void tsip_46_health(void)
     status = packet[1];
     hwstatus = packet[2];
 
-    fix = (status == 0x00);
-
-    if (initialized)
-	tsip_27_req_signal_levels();
+    if (status == 0x00 && gps->fix == 0) {
+	gps->fix = 1;
+	gps->updated |= GPS_STATE_FIX;
+    }
+    if (status != 0x00 && gps->fix != 0) {
+	gps->fix = 0;
+	gps->updated |= GPS_STATE_FIX;
+    }
 }
 
 static void tsip_47_sat_signals(struct gps_state *gps)
@@ -158,26 +168,16 @@ static void tsip_47_sat_signals(struct gps_state *gps)
 
     for (i = 0; i < count; i++) {
 	svn = packet[2 + 5 * i];
+	/* attn. we get SNR both here and in tsip_5C_sat_track_status */
 	tmp = Single(&packet[3 + 5 * i]);
-	used = (tmp >= 0);
-	snr = abs((int)tmp);
+	used = (tmp > 0);
+	snr = (int)fabsf(tmp) / 2;
 	time = datestamp + timestamp;
 
 	new_sat(gps, svn, time, UNKNOWN_ELV, UNKNOWN_AZM, snr, used);
     }
     if (count)
 	gps->updated = GPS_STATE_SIGNALS;
-
-    /* update satellite tracking status */
-    if (datestamp + timestamp > sat_track_update)
-	tsip_3C_req_sat_track_status();
-
-    /* If we don't have a fix yet there isn't that much data coming from the
-     * receiver, which is a bit uncomfortable for the end-user (gpsapp looks to
-     * be stuck). So we can try to get a continuous stream of signal level
-     * requests */
-    if (!count)
-	tsip_27_req_signal_levels();
 }
 
 static void tsip_55_io_options(void)
@@ -198,24 +198,16 @@ static void tsip_55_io_options(void)
 
 static void tsip_56_velocity(struct gps_state *gps)
 {
-    float east, north, up, bias, time;
-
     if (packet_idx != 21) return;
 
-    east  = Single(&packet[1]);
-    north = Single(&packet[5]);
-    up    = Single(&packet[9]);
-    bias  = Single(&packet[13]);
-    time  = Single(&packet[17]);
+    gps->spd_east  = Single(&packet[1]);
+    gps->spd_north = Single(&packet[5]);
+    gps->spd_up    = Single(&packet[9]);
 
-    timestamp = (int)time;
-
+    timestamp = (int)Single(&packet[17]);
     gps->time = timestamp + datestamp;
-    gps->spd_east = east;
-    gps->spd_north = north;
-    gps->spd_up = up;
 
-    gps->bearing = radtodeg(atan2(east, north));
+    gps->bearing = radtodeg(atan2(gps->spd_east, gps->spd_north));
     if (gps->bearing < 0) gps->bearing += 360;
 
     gps->updated |= GPS_STATE_SPEED | GPS_STATE_BEARING;
@@ -223,20 +215,49 @@ static void tsip_56_velocity(struct gps_state *gps)
 
 static void tsip_5C_sat_track_status(struct gps_state *gps)
 {
-    float elv, azm;
-    int time, snr;
+    float elv, azm, tmp;
+    int time, used, snr;
     unsigned char svn;
 
     if (packet_idx != 25) return;
 
     svn = packet[1];
-    snr = abs((int)Single(&packet[5]));
+    /* attn. we get SNR both here and in tsip_47_sat_signals */
+    tmp = Single(&packet[5]);
+    used = (tmp > 0);
+    snr = (int)fabsf(tmp) / 2;
     time = datestamp + (int)Single(&packet[9]);
     elv = Single(&packet[13]);
     azm = Single(&packet[17]);
 
-    new_sat(gps, svn, time, elv, azm, UNKNOWN_SNR, UNKNOWN_USED);
+    new_sat(gps, svn, time, elv, azm, snr, used);
     gps->updated |= GPS_STATE_SATS;
+}
+
+static void tsip_6D_sats_in_view(struct gps_state *gps)
+{
+    int i, tmp, nsvs;
+
+    if (packet_idx < 18) return;
+
+    tmp = packet[1];
+    switch(tmp & 0x7) {
+    case 4: gps->fix = 3; break;
+    case 3: gps->fix = 2; break;
+    default: break;
+    }
+    gps->hdop = Double(&packet[6]);
+
+    nsvs = tmp >> 4;
+    if (packet_idx != 18 + nsvs) return;
+
+    for (i = 0; i < MAX_TRACKED_SATS; i++)
+	gps->sats[i].used = 0;
+    for (i = 0; i < nsvs; i++)
+	new_sat(gps, packet[17+1], UNKNOWN_TIME, UNKNOWN_ELV, UNKNOWN_AZM,
+		UNKNOWN_SNR, 1);
+
+    gps->updated |= GPS_STATE_FIX;
 }
 
 static void tsip_82_dgps_fix(void)
@@ -256,22 +277,15 @@ static void tsip_82_dgps_fix(void)
 
 static void tsip_84_position(struct gps_state *gps)
 {
-    double lat, lon, alt, bias;
-    float time;
-
     if (packet_idx != 37) return;
 
-    lat  = Double(&packet[1]);
-    lon  = Double(&packet[9]);
-    alt  = Double(&packet[17]);
-    bias = Double(&packet[25]);
-    time = Single(&packet[33]);
+    gps->lat  = Double(&packet[1]);
+    gps->lon  = Double(&packet[9]);
+    gps->alt  = Double(&packet[17]);
 
-    timestamp = (int)time;
-
+    timestamp = (int)Single(&packet[33]);
     gps->time = timestamp + datestamp;
-    gps->lat = lat;
-    gps->lon = lon;
+
     gps->updated |= GPS_STATE_COORD;
 
     tsip_27_req_signal_levels();
@@ -288,11 +302,12 @@ static void tsip_decode(struct gps_state *gps)
     switch(packet[0]) {
     case 0x41: tsip_41_time(); break;
     case 0x45: tsip_45_version(); break;
-    case 0x46: tsip_46_health(); break;
+    case 0x46: tsip_46_health(gps); break;
     case 0x47: tsip_47_sat_signals(gps); break;
     case 0x55: tsip_55_io_options(); break;
     case 0x56: tsip_56_velocity(gps); break;
     case 0x5C: tsip_5C_sat_track_status(gps); break;
+    case 0x6D: tsip_6D_sats_in_view(gps); break;
     case 0x82: tsip_82_dgps_fix(); break;
     case 0x84: tsip_84_position(gps); break;
     }
@@ -312,6 +327,15 @@ static void tsip_init(void)
      * and triggers our side of the initialization sequence, so pretend we just
      * saw one and start the initialization */
     tsip_82_dgps_fix();
+}
+
+static void tsip_poll(void)
+{
+    /* get current fix status */
+    tsip_24_req_gps_fix();
+
+    /* update satellite tracking status */
+    tsip_3C_req_sat_track_status();
 }
 
 static void tsip_update(char c, struct gps_state *gps)
@@ -356,5 +380,5 @@ restart:
 	goto restart;
 }
 
-REGISTER_PROTOCOL("TSIP", 9600, 'O', tsip_init, NULL, tsip_update);
+REGISTER_PROTOCOL("TSIP", 9600, 'O', tsip_init, tsip_poll, tsip_update);
 

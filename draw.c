@@ -187,13 +187,13 @@ void draw_scale(void)
 {
     char buf[10];
 
-    formatdist(buf, 8 << map_scale);
+    formatdist(buf, 8 << map_scale, 0);
 
-    vfdlib_drawLineHorizUnclipped(screen, 0, MAX_X - 4, 3, VFDSHADE_DIM);
-    vfdlib_drawLineHorizUnclipped(screen, 7, MAX_X - 4, 3, VFDSHADE_DIM);
-    vfdlib_drawLineVertUnclipped(screen, MAX_X - 3, 1, 6, VFDSHADE_DIM);
+    vfdlib_drawLineHorizUnclipped(screen, 0, MAX_X - 4, 3, -1);
+    vfdlib_drawLineHorizUnclipped(screen, 7, MAX_X - 4, 3, -1);
+    vfdlib_drawLineVertUnclipped(screen, MAX_X - 3, 1, 6, -1);
     vfdlib_drawText(screen, buf, MAX_X - 3 - vfdlib_getTextWidth(buf, 0),
-		    1, 0, VFDSHADE_DIM);
+		    1, 0, -1);
 }
 
 void draw_gpscoords(void)
@@ -218,7 +218,7 @@ void draw_info(void)
 
     if (route_getwp(-1, NULL, &dist, NULL)) {
 	if (show_time) time_estimate(buf, dist);
-	else           formatdist(buf, dist);
+	else           formatdist(buf, dist, 0);
 	vfdlib_drawText(screen, buf, VFD_WIDTH - vfdlib_getTextWidth(buf, 0)+1,
 			0, 0, -1);
     }
@@ -229,7 +229,7 @@ void draw_info(void)
     }
 
     if (show_time) time_estimate(buf, dist);
-    else	   formatdist(buf, dist);
+    else	   formatdist(buf, dist, 0);
     vfdlib_drawText(screen, buf, VFD_WIDTH - vfdlib_getTextWidth(buf, 0)+1,
 		    VFD_HEIGHT + 1 - h0, 0, -1);
 
@@ -312,7 +312,7 @@ void draw_wpstext(void)
 		vfdlib_drawText(screen, "+", 0, vert, 0, -1);
 		route_getwp(topwp + i - 1, NULL, &last_dist, NULL);
 	    }
-	    formatdist(buf, abs(dist - last_dist));
+	    formatdist(buf, abs(dist - last_dist), 0);
 	}
 	vfdlib_drawText(screen, buf, SHIFT - 1 - vfdlib_getTextWidth(buf, 0),
 			vert, 0, -1);
@@ -384,9 +384,10 @@ void err(char *msg)
 
 void draw_sats(struct gps_state *gps)
 {
-    char sat[3];
+    char line[13];
     int i, height, x, y, data = 0;
-    int gshade, tshade;
+    int gshade, tshade, nsvs = 0;
+    int w0;
 
     /* Draw a center point and circle for the satellite position display */
     vfdlib_drawOutlineEllipseClipped(screen, 112, 15, 15, 15, VFDSHADE_DIM);
@@ -396,35 +397,69 @@ void draw_sats(struct gps_state *gps)
 	if (!gps->sats[i].svn) continue;
 
 	data = 1;
-	sprintf(sat, "%02d", gps->sats[i].svn);
+	sprintf(line, "%02d", gps->sats[i].svn);
 	height = 24 - (int)gps->sats[i].snr;
 
-	if (gps->time - gps->sats[i].time <= 3) {
+	if (gps->sats[i].used) {
 	    gshade = VFDSHADE_BRIGHT;
 	    tshade = -1;
+	    nsvs++;
 	}
 	else
 	    gshade = tshade = VFDSHADE_MEDIUM;
 
-	vfdlib_drawText(screen, sat, i * 8, VFD_HEIGHT - h0, 0, tshade);
+	vfdlib_drawText(screen, line, i * 8, VFD_HEIGHT - h0, 0, tshade);
 
-	if (gps->sats[i].used) {
+	if (gps->time - gps->sats[i].time <= 3) {
 	    vfdlib_drawSolidRectangleClipped(screen, i * 8 + 1, height,
 					     i * 8 + 7, VFD_HEIGHT - h0 - 1,
 					     gshade);
-	    tshade = -1;
 	} else {
 	    vfdlib_drawOutlineRectangleClipped(screen, i * 8 + 1, height,
 					       i * 8 + 7, VFD_HEIGHT - h0 - 1,
 					       gshade);
-	    tshade = VFDSHADE_MEDIUM;
 	}
 
 	x = 108 + (12 * sin(gps->sats[i].azm) * cos(gps->sats[i].elv));
 	y = 12  + (12 * -cos(gps->sats[i].azm) * cos(gps->sats[i].elv));
-	vfdlib_drawText(screen, sat, x, y, 0, tshade);
+	vfdlib_drawText(screen, line, x, y, 0, tshade);
     }
 
+#if 0
+    /* show coordinates? */
+    format_coords(line, gps_state.lat, gps_state.lon);
+    vfdlib_drawText(screen, line, 0, 0, 0, -1);
+#endif
+
+    /* show altitude */
+    formatdist(line, gps_state.alt, 1);
+    w0 = vfdlib_getTextWidth(line, 0);
+    vfdlib_drawText(screen, line, 96-w0, h0+1, 0,
+		    gps_state.fix == 3 ? -1 : VFDSHADE_MEDIUM);
+
+    /* show HDOP */
+    sprintf(line, "%4.2f HD", gps_state.hdop);
+    w0 = vfdlib_getTextWidth(line, 0);
+    vfdlib_drawText(screen, line, 96-w0, 2*(h0+1), 0,
+		    gps_state.fix ? -1 : VFDSHADE_MEDIUM);
+
+    /* show fix and # of svs used */
+    {
+	char *fixes[] = {"--", "  ", "2D", "3D" };
+	sprintf(line, "%s %2dSV", fixes[gps_state.fix], nsvs);
+	w0 = vfdlib_getTextWidth(line, 0);
+	vfdlib_drawText(screen, line, 96-w0, 3*(h0+1), 0, -1);
+    }
+
+#if 0
+    /* show speed? */
+    if (show_metric)
+	 sprintf(line, "%3dkph", (int)((double)gps_speed / 1000.0));
+    else sprintf(line, "%3dmph", (int)((double)gps_speed / 1609.344));
+    vfdlib_drawText(screen, line, 64, h0*4, 0, -1);
+#endif
+
+    /* fix, bearing, coordinates? */
     if (!data)
 	draw_msg("Looking for satellites");
 }

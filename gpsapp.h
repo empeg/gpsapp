@@ -51,7 +51,7 @@ extern struct coord coord_center;
 #define degtorad(deg) (deg * ((2.0 * M_PI) / 360.0))
 #define radtodeg(rad) (rad * (360.0 / (2.0 * M_PI)))
 
-char *formatdist(char *buf, const unsigned int distance);
+char *formatdist(char *buf, const unsigned int distance, const int alt);
 char *time_estimate(char *buf, const unsigned int distance);
 
 void toTM(struct coord *point);

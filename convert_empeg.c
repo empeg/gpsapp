@@ -18,12 +18,12 @@ int stats_distance;
 int stats_bearing;
 
 /* buf needs to be at least 10 characters */
-char *formatdist(char *buf, const unsigned int dist)
+char *formatdist(char *buf, const unsigned int dist, const int alt)
 {
 #define meters_per_mile 1609.344
 #define meters_per_foot 0.3048
     if (show_metric) {
-	if (dist < 1000)
+	if (dist < 1000 || alt)
 	    sprintf(buf, "%um ", dist);
 	else {
 	    unsigned int decameters = dist / 10;
@@ -37,7 +37,7 @@ char *formatdist(char *buf, const unsigned int dist)
 		sprintf(buf, "%ukm", decameters / 100);
 	}
     } else {
-	if (dist < 161) // ~ 0.1 mile, 305 would be ~1000 feet
+	if (dist < 161 || alt) // ~ 0.1 mile, 305 would be ~1000 feet
 	    sprintf(buf, "%uft", (dist * 10000) / 3048);
 	else {
 	    unsigned int centimiles = (dist * 1000) / 16093; // .44

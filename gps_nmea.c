@@ -11,7 +11,7 @@
 #include "gpsapp.h"
 #include "gps_protocol.h"
 
-static int timestamp, datestamp;
+static int datestamp;
 
 static time_t today(void)
 {
@@ -77,7 +77,7 @@ static int nmea_date(char **p)
     mon  -= day * 100;
 
     if (day >= 1 && day <= 31 && mon >= 1 &&
-	mon <= 12 && year >= 00 && year <= 99)
+	mon <= 12 && year >= 0 && year <= 99)
 	    datestamp = conv_date(year + 2000, mon, day);
 
     return datestamp;
@@ -173,15 +173,29 @@ void nmea_decode(struct gps_state *gps, char xor)
 	/* $GPGGA,time,lat,N/S,long,E/W,fix(0/1/2),nsat,HDOP,alt,gheight,
 	 * dgpsdt,dgpsid* */
 	int timestamp, lat_set, lon_set, fix;
-	double lat, lon;
+	double lat, lon, tmp;
 
 	timestamp = nmea_time(&p);
-	lat_set = nmea_latlong(&p, &lat, 'N', 'S');
-	lon_set = nmea_latlong(&p, &lon, 'E', 'W');
-	fix = nmea_fix(&p);
-
 	gps->time = timestamp + datestamp;
 	if (!datestamp) gps->time += today();
+
+	lat_set = nmea_latlong(&p, &lat, 'N', 'S');
+	lon_set = nmea_latlong(&p, &lon, 'E', 'W');
+
+	fix = nmea_fix(&p);
+	if (fix && !gps->fix) {
+	    gps->fix = 1;
+	    gps->updated |= GPS_STATE_FIX;
+	}
+	if (!fix && gps->fix) {
+	    gps->fix = 0;
+	    gps->updated |= GPS_STATE_FIX;
+	}
+
+	p++; skip(&p); /* nsats */
+
+	if (nmea_float(&p, &tmp)) gps->hdop = tmp;
+	if (nmea_float(&p, &tmp)) gps->alt = tmp;
 
 	if (lat_set && lon_set) {
 	    gps->lat = lat;
@@ -197,7 +211,16 @@ void nmea_decode(struct gps_state *gps, char xor)
 	lat_set = nmea_latlong(&p, &lat, 'N', 'S');
 	lon_set = nmea_latlong(&p, &lon, 'E', 'W');
 	timestamp = nmea_time(&p);
+
 	fix = nmea_fix(&p);
+	if (fix && !gps->fix) {
+	    gps->fix = 1;
+	    gps->updated |= GPS_STATE_FIX;
+	}
+	if (!fix && gps->fix) {
+	    gps->fix = 0;
+	    gps->updated |= GPS_STATE_FIX;
+	}
 
 	gps->time = timestamp + datestamp;
 	if (!datestamp) gps->time += today();
@@ -215,7 +238,17 @@ void nmea_decode(struct gps_state *gps, char xor)
 	double lat, lon, spd, bearing;
 
 	timestamp = nmea_time(&p);
+
 	fix = nmea_fix(&p);
+	if (fix && !gps->fix) {
+	    gps->fix = 1;
+	    gps->updated |= GPS_STATE_FIX;
+	}
+	if (!fix && gps->fix) {
+	    gps->fix = 0;
+	    gps->updated |= GPS_STATE_FIX;
+	}
+
 	lat_set = nmea_latlong(&p, &lat, 'N', 'S');
 	lon_set = nmea_latlong(&p, &lon, 'E', 'W');
 	spd_set = nmea_float(&p, &spd);
@@ -245,15 +278,16 @@ void nmea_decode(struct gps_state *gps, char xor)
     else if (memcmp(&packet[1], "GPVTG", 5) == 0) {
 	/* $GPVTG,bear,T,magnbear,M,knot-speed,N,kph-speed,K* */
 	double bearing, spd;
+
 	if (nmea_float(&p, &bearing)) {
 		gps->bearing = (int)bearing;
 		gps->updated |= GPS_STATE_BEARING;
 	}
+
 	p++; skip(&p); // T
-	p++; skip(&p); // magnbear
-	p++; skip(&p); // M
-	p++; skip(&p); // knot-speed
-	p++; skip(&p); // N
+	p++; skip(&p); p++; skip(&p); // magnbear, M
+	p++; skip(&p); p++; skip(&p); // knot-speed, N
+
 	if (nmea_float(&p, &spd)) {
 	    double b = degtorad(gps->bearing);
 	    spd /= 3.6 /* kph to m/s */;
@@ -268,36 +302,47 @@ void nmea_decode(struct gps_state *gps, char xor)
 	double elv, azm;
 	int i, svn, snr;
 	int nmsg, msg;
+
 	nmsg = nmea_int(&p);
 	msg = nmea_int(&p);
+
 	p++; skip(&p);
 
 	for (i = 0; i < 4; i++) {
 	    svn = nmea_int(&p);
 	    elv = degtorad(nmea_int(&p));
 	    azm = degtorad(nmea_int(&p));
-	    snr = (nmea_int(&p) - 20) / 2;
+	    snr = nmea_int(&p) / 4;
 
-	    new_sat(gps, svn, timestamp, elv, azm, snr, UNKNOWN_USED);
+	    new_sat(gps, svn, gps->time, elv, azm, snr, UNKNOWN_USED);
 	}
 	if (msg == nmsg)
 	    gps->updated |= GPS_STATE_SIGNALS | GPS_STATE_SATS;
     }
     else if (memcmp(&packet[1], "GPGSA", 5) == 0) {
 	/* $GPGSA,mode,fix(0/1/2D/3D),sat1,...,sat12,pdop,hdop,vdop* */
-	int i, svn;
+	int i, fix, svn;
+	double tmp;
+
+	p++; skip(&p);
+
+	fix = nmea_int(&p);
+	switch (fix) {
+	case 3: fix = 3; break;
+	case 2: fix = 2; break;
+	case 1: fix = 0; break;
+	default: break;
+	}
 
 	for (i = 0; i < MAX_TRACKED_SATS; i++)
 	    gps->sats[i].used = 0;
 
-	p++; skip(&p);
-	p++; skip(&p);
-
 	for (i = 0; i < 12; i++) {
 	    svn = nmea_int(&p);
-	    new_sat(gps, svn, timestamp, UNKNOWN_ELV, UNKNOWN_AZM, UNKNOWN_SNR, 1);
+	    new_sat(gps, svn, gps->time, UNKNOWN_ELV, UNKNOWN_AZM, UNKNOWN_SNR, 1);
 	}
-	gps->updated |= GPS_STATE_SATS;
+	if (nmea_float(&p, &tmp)) gps->hdop = tmp;
+	gps->updated |= GPS_STATE_FIX | GPS_STATE_SATS;
     }
 }
    
@@ -354,6 +399,7 @@ restart:
 
 static void nmea_init(void)
 {
+  serial_send("$PMOTG,GGA,0001\r\n", 17);
   serial_send("$PMOTG,RMC,0001\r\n", 17);
   serial_send("$PMOTG,GSA,0001\r\n", 17);
   serial_send("$PMOTG,GSV,0001\r\n", 17);

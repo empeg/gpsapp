@@ -29,11 +29,17 @@ static int INT32(unsigned char *p)
 static void em_1000geodpos(struct gps_state *gps)
 {
     double speed;
-    int bearing;
+    int bearing, solinv;
+
+    solinv = INT16(&packet[WD(10)]) & 0x5;
+    if (solinv) gps->fix = 0;
+    else	gps->fix = 1;
+
     gps->lat = radtodeg(INT32(&packet[WD(27)]) * 1.0e-8);
-    gps->lon = radtodeg(INT32(&packet[WD(28)]) * 1.0e-8);
+    gps->lon = radtodeg(INT32(&packet[WD(29)]) * 1.0e-8);
+    gps->alt = INT32(&packet[WD(31)]) * 1.0e-2;
     speed = ((unsigned int)INT32(&packet[WD(34)])) * 1.0e-2;
-    bearing = INT16(&packet[WD(36)]) * 1.0e-3;
+    bearing = radtodeg(INT16(&packet[WD(36)]) * 1.0e-3);
 
     if (bearing < 0) bearing += 2 * M_PI;
 
@@ -46,7 +52,7 @@ static void em_1000geodpos(struct gps_state *gps)
 	INT16(&packet[WD(24)])+(60*INT16(&packet[WD(23)])) +
 	(3600*INT16(&packet[WD(22)]));
 
-    gps->updated |= GPS_STATE_COORD | GPS_STATE_BEARING | GPS_STATE_SPEED;
+    gps->updated |= GPS_STATE_FIX | GPS_STATE_COORD | GPS_STATE_BEARING | GPS_STATE_SPEED;
 }
 
 static void em_1002chsum(struct gps_state *gps)
@@ -65,7 +71,7 @@ static void em_1002chsum(struct gps_state *gps)
 	used  = status & 0x1;
 	valid = status & 0x4;
 	svn = INT16(&packet[WD(16 + (3 * j))]);
-	snr = INT16(&packet[WD(17 + (3 * j))]) / 3; /* scaling snr to 0-24 */
+	snr = INT16(&packet[WD(17 + (3 * j))]) / 4; /* scaling snr to 0-16 */
 
 	new_sat(gps, svn, valid ? time : UNKNOWN_TIME, UNKNOWN_ELV, UNKNOWN_AZM,
 		snr, used);
@@ -78,6 +84,8 @@ static void em_1003sats(struct gps_state *gps)
 {
     double elv, azm;
     int j, svn, nsats = INT16(&packet[WD(14)]);
+
+    gps->hdop = INT32(&packet[WD(11)]) * 1.0e-2;
 
     for (j = 0; j < nsats; j++) {
 	svn = INT16(&packet[WD(15 + (3 * j))]);

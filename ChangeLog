@@ -1,3 +1,10 @@
+Changes in v0.12
+
+ * Fixed the visible satellites only appear in slot 0 bug in NMEA mode.
+ * Added altitude, HDOP, fix, and #svs to the satellite screen.
+ * Not linking Garmin or TAIP protocols into the binary anymore.
+ * Scale is now bright instead of dimmed.
+
 Changes in v0.11
 
  * Derrick Brashear added earthmate support, his earthmate is currently

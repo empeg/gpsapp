@@ -77,25 +77,25 @@ Installation
 
 - Static configuration can be done in config.ini. Options go in a
   [gpsapp] section, and are:
-  o protocol: [nmea|tsip|earthmate|garmin|taip]
+  o protocol=[nmea|tsip|earthmate]
     select protocol we use to talk to the GPS. Most gps's will work fine
     in NMEA, which is also the default setting.
-  o visual: [sats|map|route]
+  o visual=[sats|map|route]
     select default visual mode
-  o metric: [true|false]           
+  o metric=[true|false]           
     select meters if true, miles if false
-  o gpscoords: [true|false]        
+  o gpscoords=[true|false]        
     show latitude and longitude if true
-  o rubberband: [true|false]       
+  o rubberband=[true|false]       
     highlight route to next waypoint if true
-  o track: [true|false]            
+  o track=[true|false]            
     display previously traversed track if true
-  o scale: [true|false]            
+  o scale=[true|false]            
     show map scale (in map mode) if true
-  o popups: [true|false|permanent] 
+  o popups=[true|false|permanent] 
     show waypoint text popups when near the waypoint if true, always if
     permanent, never if false
-  o time: [true|false]             
+  o time=[true|false]             
     show time to next waypoint if true, distance if false
 
 Short operating instructions

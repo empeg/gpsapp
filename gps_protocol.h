@@ -29,16 +29,24 @@ struct gps_sat {
 
 struct gps_state {
     int	    updated;    /* bitmask, which fields have been updated */
-#define GPS_STATE_COORD   0x1
-#define GPS_STATE_BEARING 0x2
-#define GPS_STATE_SPEED   0x4
-#define GPS_STATE_SIGNALS 0x8
+#define GPS_STATE_COORD   0x01
+#define GPS_STATE_BEARING 0x02
+#define GPS_STATE_SPEED   0x04
+#define GPS_STATE_SIGNALS 0x08
 #define GPS_STATE_SATS    0x10
+#define GPS_STATE_FIX     0x20
 
-    time_t  time;	/* GPS time translated to unix time */
-    double  lat;	/* latitude in radians [-PI/2, PI/2]*/
-    double  lon;	/* longtitude in radians [-PI, PI]*/
-    int	    bearing;	/* current bearing (degrees 0 - 360) (-1 == no fix) */
+    time_t  time;	/* GPS time, most likely of last fix, translated to
+			   unix time */
+
+    int	    fix;	/* type of last fix (0 = No fix, 2 = 2D, 3 = 3D) */
+    double  hdop;	/* horizontal dillution of precision */
+
+    double  lat;	/* latitude in degrees [-180, 180] */
+    double  lon;	/* longtitude in degrees [-90, 90] */
+    double  alt;	/* altitude */
+
+    int	    bearing;	/* current bearing degrees [0, 360] */
     double  spd_east;   /* meters per second */
     double  spd_north;  /* meters per second */
     double  spd_up;     /* meters per second */
