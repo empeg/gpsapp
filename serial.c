@@ -161,12 +161,15 @@ static int serial_avail(void)
 void serial_poll()
 {
     static time_t poll_stamp;
+    time_t old_gps_time;
     char buf[16];
     int n, i;
 
     if (serialfd == -1)
 	return;
 
+
+    old_gps_time = gps_state.time;
     while (serial_avail()) {
 	n = read(serialfd, buf, sizeof(buf));
 	if (n <= 0) break;
@@ -175,7 +178,10 @@ void serial_poll()
 	    protocol->update(buf[i], &gps_state);
     }
 
-    if (gps_state.updated) {
+    /* only updated once a second, and then only when we actually have received
+     * anything from the receiver */
+    if (old_gps_time != gps_state.time && gps_state.updated)
+    {
 	gps_coord.lat = gps_state.lat;
 	gps_coord.lon = gps_state.lon;
 
