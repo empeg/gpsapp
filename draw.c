@@ -17,7 +17,7 @@
 #define MAX_Y (VFD_HEIGHT)
 
 static unsigned char screen[VFD_HEIGHT * VFD_BYTES_PER_SCANLINE];
-static int map_scale = 3;
+static int map_scale = 5;
 
 void draw_clear(void)
 {
@@ -208,9 +208,12 @@ void draw_info(void)
 {
     char *desc, buf[60];
     unsigned int dist;
-    int center_x, center_y, tip_x, tip_y, b;
+    int tip_x, tip_y, b;
     struct xy pos;
+#if 0
+    int center_x, center_y;
     double b2;
+#endif
 
     vfdlib_drawLineVertUnclipped(screen, MAX_X, 0, 8, VFDSHADE_BRIGHT);
     vfdlib_drawLineVertUnclipped(screen, MAX_X, 8, 8, VFDSHADE_MEDIUM);
@@ -224,10 +227,9 @@ void draw_info(void)
 			0, 0, -1);
     }
 
-    formatdist(buf, gps_speed, 0);
-    strcat(buf, "/h");
-    vfdlib_drawText(screen, buf, VFD_WIDTH - vfdlib_getTextWidth(buf, 0) + 1,
-		    VFD_HEIGHT + 1 - h0, 0, -1);
+    formatspeed(buf, gps_speed);
+    vfdlib_drawText(screen, buf, VFD_WIDTH - vfdlib_getTextWidth(buf, 1) + 1,
+		    2 * h0, 1, -1);
 
     if (!route_getwp(nextwp, &pos, &dist, &desc)) {
 	draw_popup(NULL);
@@ -236,14 +238,15 @@ void draw_info(void)
 
     if (show_time) time_estimate(buf, dist);
     else	   formatdist(buf, dist, 0);
-    strcat(buf, " ");
-    strcat(buf, desc);
+    vfdlib_drawText(screen, buf, VFD_WIDTH - vfdlib_getTextWidth(buf, 0) + 1,
+		    VFD_HEIGHT + 1 - vfdlib_getTextHeight(0), 0, -1);
 
-    draw_popup(show_popups && (dist < 1000 || show_popups == 2) ? buf : NULL);
+    draw_popup(show_popups && (dist < 1000 || show_popups == 2) ? desc : NULL);
 
     /* draw pointer */
     b = radtodeg(bearing(&gps_coord.xy, &pos)) - gps_bearing;
     while (b < 0) b += 360;
+#if 0
     center_x = VFD_WIDTH - VFD_HEIGHT / 2;
     center_y = VFD_HEIGHT / 2;
     b2 = degtorad(b);
@@ -251,6 +254,10 @@ void draw_info(void)
     tip_y = center_y - (int)(6.0 * cos(b2));
     vfdlib_drawLineUnclipped(screen, center_x, center_y,
 			     tip_x, tip_y, VFDSHADE_BRIGHT);
+#else
+    tip_x = VFD_WIDTH - VFD_HEIGHT + h0;
+    tip_y = h0 + 4;
+#endif
     if (gps_bearing == -1)
 	b = -1;
     _draw_mark(tip_x, tip_y, b, VFDSHADE_BRIGHT);
@@ -335,17 +342,21 @@ void draw_popup(char *text)
 {
     static char *current;
     static int hoff, voff, lost, dir;
-    int offset = 0;
+    int offset = 0, streq;
 
     if (!current && !text) return;
-    if (current != text) { // scroll-out existing message
+    streq = current && text && strcmp(current, text) == 0;
+    if (!streq) { // scroll-out existing message
 	voff--;
 	if (voff > 0) do_refresh = 1;
-	else current = NULL;
+	else {
+	    free(current);
+	    current = NULL;
+	}
     }
     if (!current) {
 	if (!text) return;
-	current = text;
+	current = strdup(text);
 	lost = vfdlib_getTextWidth(current, 0) - MAX_X;
 	if (lost < 0) lost = 0;
 	hoff = 0;
@@ -353,7 +364,7 @@ void draw_popup(char *text)
 	dir = 2;
 	do_refresh = 1;
     }
-    else if (current == text && voff < h0) { // scroll-in
+    else if (streq && voff < h0) { // scroll-in
 	voff++;
 	do_refresh = 1;
     } else {
@@ -455,7 +466,7 @@ void draw_sats(struct gps_state *gps)
     strcat(line, "/h");
     w0 = vfdlib_getTextWidth(line, 0);
     vfdlib_drawText(screen, line, 96-w0, 2*h0, 0,
-		    gps_state.fix == 0x3 ? -1 : VFDSHADE_MEDIUM);
+		    gps_state.fix == 0x1 ? -1 : VFDSHADE_MEDIUM);
 
     /* show HDOP */
     if (gps_state.hdop < 100.0)

@@ -367,6 +367,7 @@ int main(int argc, char **argv)
     printf("GPS app started\n");
 
     vfdlib_registerFont("empeg/lib/fonts/small.bf", 0);
+    vfdlib_registerFont("empeg/lib/fonts/large.bf", 1);
     h0 = vfdlib_getTextHeight(0);
 
     route_init();

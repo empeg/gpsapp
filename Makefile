@@ -22,7 +22,7 @@ gpsapp: ${gpsapp_OBJS}
 	$(HOSTCC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
 gpsapp_host: ${gpsapp_host_OBJS}
-	$(HOSTCC) -o $@ $^ $(LDLIBS) -L/usr/X11R6/lib -lX11
+	$(HOSTCC) $(CFLAGS) -o $@ $^ $(LDLIBS) -L/usr/X11R6/lib -lX11
 
 clean: dist
 	-rm -f gpsapp hack_init incar

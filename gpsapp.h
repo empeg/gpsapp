@@ -55,6 +55,7 @@ extern struct coord coord_center;
 #define radtodeg(rad) (rad * (360.0 / (2.0 * M_PI)))
 
 char *formatdist(char *buf, const int distance, const int alt);
+char *formatspeed(char *buf, const int speed);
 char *time_estimate(char *buf, const int distance);
 char *format_coord(char *buf, double llr, char dir[2]);
 
