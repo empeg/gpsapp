@@ -110,4 +110,10 @@ void serial_open(void);
 void serial_close(void);
 void serial_poll(void);
 
+/* config file parser (config.c) */
+#define CONFIG_HEADER "[gpsapp]"
+#define CONFIG_HDRLEN 8
+int config_ini_option (char *s, char *match, int *inside);
+
 #endif
+

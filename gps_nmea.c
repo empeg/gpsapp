@@ -374,5 +374,10 @@ static int nmea_update(char c, struct gps_state *gps)
     return 0;
 }
 
-REGISTER_PROTOCOL("NMEA", 4800, 'N', NULL, nmea_update);
+static void nmea_init(void)
+{
+  serial_send("$PMOTG,VTG,0001\r\n", 17);
+}
+
+REGISTER_PROTOCOL("NMEA", 4800, 'N', nmea_init, nmea_update);
 

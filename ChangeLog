@@ -13,6 +13,9 @@ Changes in v0.11
    already broken.
  * Moved generic helper functions for the protocol parsers into
    gps_protocol.c.
+ * More useful patches from Derrick, parsing config.ini for default options.
+   Showing what state we toggled a menu entry to once it is selected.
+   Sending Motorola Oncore init sentence to enable VTG logging.
 
 Changes in v0.10
 

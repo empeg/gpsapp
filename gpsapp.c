@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <errno.h>
+#include <fcntl.h>
 #include "empeg_ui.h"
 #include "vfdlib.h"
 #include "gpsapp.h"
@@ -34,11 +35,13 @@ int h0;
 int do_refresh = 0;
 
 static int menu;
+static int lastmenu;
 static int load_route;
 static int menu_pos;
+static int lastmenu_pos;
 static char *menu_msg[] = {
     "Load Route",
-    "Toggle Text/Map",
+    "Toggle Text/Map/Sats",
     "Toggle Popups",
     "Toggle Miles/Meters",
     "Toggle Coordinates",
@@ -117,6 +120,21 @@ static void refresh_display(void)
 	routes_list();
     else if (menu) 
 	draw_msg(menu_msg[menu_pos]);
+
+    else if (lastmenu) {
+	char *msg=NULL;
+	lastmenu--;
+	switch(menu_pos) {
+	case 2: msg = (show_popups?"Popups":"No Popups"); break;
+	case 3: msg = (show_metric?"Meters":"Miles"); break;
+	case 4: msg = (show_gpscoords?"Coordinates":"No Coordinates"); break;
+	case 5: msg = (show_rubberband?"Rubberband":"No Rubberband"); break;
+	case 6: msg = (show_time?"Time":"Distance"); break;
+	case 7: msg = (show_track?"Track":"No Track"); break;
+	}
+	if (msg)
+	    draw_msg(msg);
+    }
 
     draw_display();
 
@@ -207,7 +225,7 @@ static int handle_input(void)
 	    case 6: show_time = 1 - show_time; break;
 	    case 7: show_track = 1 - show_track; break;
 	    }
-	    menu = 0;
+	    menu = 0; lastmenu = 3; lastmenu_pos = menu_pos;
 	}
 	else
 	    menu = 1;
@@ -268,6 +286,42 @@ static int handle_input(void)
     return 0;
 }
 
+static void
+init_gpsapp()
+{
+    char buf[512];
+    ssize_t bytes = 0, done = 0;
+    int ret = 0;
+    int offset = 0;
+    int fd = open("empeg/var/config.ini", O_RDONLY);
+    int inside = 0;
+
+    while ((bytes=read(fd, buf, 512))>CONFIG_HDRLEN) {
+	buf[bytes]='\0';
+	offset=CONFIG_HDRLEN; 
+	done+=bytes;
+	ret = config_ini_option (buf, "metric", &inside);
+	if (ret > -1 && ret < 2) show_metric = ret;
+	ret = config_ini_option (buf, "gpscoords", &inside);
+	if (ret > -1 && ret < 2) show_gpscoords = ret;
+	ret = config_ini_option (buf, "rubberband", &inside);
+	if (ret > -1 && ret < 2) show_rubberband = ret;
+	ret = config_ini_option (buf, "track", &inside);
+	if (ret > -1 && ret < 2) show_track = ret;
+	ret = config_ini_option (buf, "scale", &inside);
+	if (ret > -1 && ret < 2) show_scale = ret;
+	ret = config_ini_option (buf, "popups", &inside);
+	if (ret > -1 && ret < 2) show_popups = ret;
+	ret = config_ini_option (buf, "time", &inside);
+	if (ret > -1 && ret < 2) show_time = ret;
+	if (lseek(fd, -CONFIG_HDRLEN, SEEK_CUR) != done- CONFIG_HDRLEN) {
+	    // bomb out?
+	}
+	done-=CONFIG_HDRLEN;
+    }
+    close(fd);
+}
+
 int main(int argc, char **argv)
 {
     const char *menu[] = { "GPSapp", NULL };
@@ -276,6 +330,8 @@ int main(int argc, char **argv)
 
     if (empeg_init() == -1)
 	exit(-1);
+
+    init_gpsapp();
 
     printf("GPS app started\n");
 

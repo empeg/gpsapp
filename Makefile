@@ -7,7 +7,7 @@ STRIP  := arm-linux-strip
 
 gpsapp_SRCS := gpsapp.c convert_empeg.c draw.c route.c track.c \
     serial.c gps_nmea.c gps_garmin.c gps_tsip.c gps_taip.c \
-    gps_earthmate.c gps_protocol.c empeg_ui.c vfdlib.c
+    gps_earthmate.c gps_protocol.c empeg_ui.c vfdlib.c config.c
 hack_init_SRCS := hack_init.c
 incar_SRCS := incar.c
 
