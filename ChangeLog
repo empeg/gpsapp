@@ -6,6 +6,13 @@ Changes in v0.15
    blinking satellites. Don't assume a 'locked' satellite is actually used.
    Avoid sending commands to the receiver while it is initializing.
  * Added current reported speed to the satellite screen.
+ * Changed route 'tracking' code again. Still not close to perfect.
+ * I was misinterpreting 2D and 3D fix status reporting.
+ * Added current GPS speed to map screen, moved distance to next waypoint to
+   the scrolling description.
+ * Merged Derrick's patches for specifying a different serial port, whether to
+   send a coldstart sequence to earthmate GPS's, and to specify the location
+   of route files. (serialport=, coldstart= and routedir=)
 
 Changes in v0.14
 
