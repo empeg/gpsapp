@@ -383,33 +383,46 @@ void draw_sats(struct gps_state *gps)
 {
     char sat[3];
     int i, height, x, y, data = 0;
-    int shade;
+    int gshade, tshade;
+
+    /* Draw a center point and circle for the satellite position display */
+    vfdlib_drawOutlineEllipseClipped(screen, 112, 15, 15, 15, VFDSHADE_DIM);
+    vfdlib_drawPointUnclipped(screen, 112, 15, VFDSHADE_DIM);
 
     for (i = 0; i < MAX_TRACKED_SATS; i++) {
 	if (!gps->sats[i].svn) continue;
-
-	shade = gps->sats[i].used ? -1 : VFDSHADE_MEDIUM;
 
 	data = 1;
 	sprintf(sat, "%02d", gps->sats[i].svn);
 	height = 24 - (int)gps->sats[i].snr;
 
-	vfdlib_drawText(screen, sat, i * 8, VFD_HEIGHT - h0, 0, shade);
-	if (gps->sats[i].used)
+	if (gps->time - gps->sats[i].time <= 3) {
+	    gshade = VFDSHADE_BRIGHT;
+	    tshade = -1;
+	}
+	else
+	    gshade = tshade = VFDSHADE_MEDIUM;
+
+	vfdlib_drawText(screen, sat, i * 8, VFD_HEIGHT - h0, 0, tshade);
+
+	if (gps->sats[i].used) {
 	    vfdlib_drawSolidRectangleClipped(screen, i * 8 + 1, height,
 					     i * 8 + 7, VFD_HEIGHT - h0 - 1,
-					     VFDSHADE_BRIGHT);
-	else
+					     gshade);
+	    tshade = -1;
+	} else {
 	    vfdlib_drawOutlineRectangleClipped(screen, i * 8 + 1, height,
 					       i * 8 + 7, VFD_HEIGHT - h0 - 1,
-					       VFDSHADE_MEDIUM);
+					       gshade);
+	    tshade = VFDSHADE_MEDIUM;
+	}
 
 	x = 108 + (12 * sin(gps->sats[i].azm) * cos(gps->sats[i].elv));
 	y = 12  + (12 * -cos(gps->sats[i].azm) * cos(gps->sats[i].elv));
-	vfdlib_drawText(screen, sat, x, y, 0, shade);
+	vfdlib_drawText(screen, sat, x, y, 0, tshade);
     }
 
     if (!data)
-	draw_msg("No satellite data");
+	draw_msg("Looking for satellites");
 }
 

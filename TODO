@@ -1,10 +1,17 @@
-* Satellite strength display.
+* Investigate why buttons seem to be 'ghosted' through to the player.
+  Perhaps it is a result of using HIJACK_POLLBUTTONS instead of
+  WAITBUTTONS?
 
 * Display current speed/averaged speed/magnetic north/GPS time.
   Probably not really enough room on the display for too much more
-  information. New screen?
+  information. We could speed/ETE/altitude instead of the fancy arrow.
 
-* NMEA output over IRDA.
+* NMEA output over IRDA (and in the satellite screen).
+
+* Default options in config.ini, perhaps some way to permanently fix
+  some options and not show those menu entries anymore.
+
+* Initial position and RTC in config.ini, Zodiac support.
 
 * Rotate map so that the top is in the direction we're driving. Have to
   transform all coordinates, maybe too CPU intensive? Also we have fewer
@@ -32,3 +39,4 @@
 * Sync the empeg clock based on GPS time. We need to be able to derive
   localtime first, and have some estimate of the additional delays
   introduced by serial and gpsapp.
+

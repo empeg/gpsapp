@@ -34,7 +34,7 @@ int empeg_init(void)
     return 0;
 }
 
-int empeg_waitmenu(void)
+int empeg_waitmenu(const char **menu)
 {
     const unsigned long buttons[] = { 13,
 	/* front panel buttons (12) */
@@ -49,7 +49,6 @@ int empeg_waitmenu(void)
 	0, EMPEG_SCREEN_ROWS - 1,
 	0, EMPEG_SCREEN_COLS - 1
     };
-    const char *menu[] = { "GPS", NULL };
     int rc;
 
     if (hijack_fd == -1)
@@ -149,7 +148,7 @@ void empeg_free(void)
     XCloseDisplay(display);
 }
 
-int empeg_waitmenu(void)
+int empeg_waitmenu(const char **menu)
 {
     return 0;
 }

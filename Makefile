@@ -37,7 +37,7 @@ gpsapp_host: ${gpsapp_host_OBJS}
 	$(HOSTCC) -o $@ $^ $(LDLIBS) -L/usr/X11R6/lib -lX11
 
 clean: dist
-	-rm -f gpsapp hack_init
+	-rm -f gpsapp hack_init incar
 
 dist:
 	-rm -f gpsapp_host ${gpsapp_host_OBJS} ${gpsapp_OBJS} ${hack_init_OBJS}

@@ -251,44 +251,28 @@ void route_skipwp(int dir)
 
 void route_locate(void)
 {
-    int minwp, idx, incr;
+    int idx, incr;
     long long mindist, dist;
 
-#if 1 /* don't try to be smart, just search based on the current nextwp */
+    /* don't try to be smart, just search based on the current nextwp */
     if (nextwp >= route.nwps) return;
-    minwp = nextwp;
-    minidx = route.wps[minwp].idx;
+    minidx = route.wps[nextwp].idx;
     mindist = distance2(&gps_coord.xy, &route.pts[minidx]);
-#else
-    int i;
-    minidx = minwp = 0;
-    if (!route.wps) return;
 
-    minidx = route.wps[minwp].idx;
-    mindist = distance2(&gps_coord.xy, &route.pts[minidx]);
-    for (i = 1; i < route.nwps; i++) {
-	idx = route.wps[i].idx;
-	dist = distance2(&gps_coord.xy, &route.pts[idx]);
-
-	if (dist > mindist)
-	    continue;
-
-	minwp = i;
-	minidx = idx;
-	mindist = dist;
-    }
-#endif
-
-    /* If we are travelling towards this waypoint check all points before this
+    /* If we are travelling towards this waypoint check points before this
      * one. Otherwise check all points towards the next wp */
     idx = minidx;
-    incr = 1;
     if (towards(&gps_coord.xy, &route.pts[minidx], gps_bearing))
-	 incr = -1;
+	incr = -1;
+    else
+	incr = 1;
 
     while(1) {
 	idx += incr;
 	if (idx < 0 || idx >= route.npts)
+	    break;
+
+	if (nextwp < route.nwps-1 && idx > route.wps[nextwp+1].idx)
 	    break;
 
 	dist = distance2(&gps_coord.xy, &route.pts[idx]);
@@ -312,12 +296,11 @@ void route_locate(void)
 	}
     }
 
-    while (minidx > route.wps[minwp].idx)
-	minwp++;
+    while (minidx > route.wps[nextwp].idx)
+	nextwp++;
 
     /* got it! */
     total_dist = sqrt((double)mindist) + route.dists[minidx];
-    nextwp = minwp;
 }
 
 void route_draw(struct xy *cur_pos)

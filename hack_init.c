@@ -174,7 +174,7 @@ int main(int argc, char **argv)
     if (rename("/bin/init.new", "/bin/init") == -1)
 	goto fail;
 
-    puts("All done, cross your fingers and reboot\n");
+    puts("All done, remount the drive as readonly ('ro'), cross your fingers and reboot\n");
     exit(0);
 
 fail:

@@ -1,3 +1,26 @@
+Changes in v0.10
+
+ * Updated README, it got outdated fast.
+ * Don't need to decode the signal level twice with the TSIP protocol.
+ * Another trivial to implement, but nice suggestion from ellweber. Draw
+   a circle/center point for the satellite locations.
+ * Changed the way we collect satellite signal and position information in the
+   NMEA parser to avoid the 'no satellite data' from popping up.
+ * Try to update the satellite signal screen even before we get a lock.
+ * Polling the Trimbles more agressively for satellite tracking information
+   where there is no fix yet.
+ * Increased the size of the track log.
+ * Shortened the time needed for a long-press to switch the screen.
+ * Trigger the long-press switch as soon as we hit the timeout, before
+   the button is released.
+ * Improved the "Waiting for gps location" and "No satellite data" msgs
+   according to tfabris's suggestions.
+ * Only drawing 8 tracked sats, so we have some room to add more data in the
+   satellite screen (# satellites, type of fix, dillution of precision). Data
+   isn't there yet though :)
+ * Left/right button in the route display switches between waypoints.
+ * Added the handshake that should kick a Tripmate into NMEA mode.
+
 Changes in v0.9
 
  * Added a satellite signal view, seems to work for both TSIP and NMEA.

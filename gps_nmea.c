@@ -24,8 +24,7 @@ struct gps_info {
     int		 fix;
 };
 
-static struct gps_sat sats[MAX_TRACKED_SATS];
-static int sol[MAX_TRACKED_SATS];
+static int sol[12], timestamp, got_sats;
 
 /* convert year/month/day to unix time */
 static int date(int year, int mon, int day)
@@ -60,7 +59,7 @@ static int new_measurement(const struct gps_info *tmp, struct gps_state *gps)
     static struct gps_info cur;
     struct xy last_coord;
     double b;
-    int i, update = 0;
+    int update = 0;
 
     if (tmp->timestamp && tmp->timestamp != cur.timestamp) {
 	last_coord = gps_coord.xy;
@@ -92,10 +91,7 @@ static int new_measurement(const struct gps_info *tmp, struct gps_state *gps)
 	    struct tm *tm = gmtime(&now);
 	    cur.datestamp = date(tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday);
 	}
-	gps->time = cur.timestamp + cur.datestamp;
-
-	for (i = 0; i < MAX_TRACKED_SATS; i++)
-	    gps->sats[i] = sats[i];
+	gps->time = timestamp = cur.timestamp + cur.datestamp;
 
 	memset(&cur, 0, sizeof(cur));
 
@@ -131,7 +127,43 @@ static int new_measurement(const struct gps_info *tmp, struct gps_state *gps)
 	   cur.speed, cur.speed_set ? "" : "?",
 	   cur.bearing, cur.bearing_set ? "" : "?");
 #endif
+    if (got_sats) {
+	update = 1;
+	got_sats = 0;
+    }
     return update;
+}
+
+void new_sat(struct gps_state *gps, int svn, int elv, int azm, int snr)
+{
+    int i, j, old, old_time = 0;
+
+    for (i = 0; i < MAX_TRACKED_SATS; i++)
+	if (gps->sats[i].svn == svn)
+	    goto update;
+
+    old = -1;
+    /* not previously seen satellite, replace the oldest entry */
+    for (i = 0; i < MAX_TRACKED_SATS; i++) {
+	if (old == -1 || gps->sats[i].time < old_time) {
+	    old = i;
+	    old_time = gps->sats[i].time;
+	}
+    }
+    i = old;
+
+update:
+    gps->sats[i].time = timestamp;
+    gps->sats[i].svn = svn;
+    gps->sats[i].elv = elv;
+    gps->sats[i].azm = azm;
+    gps->sats[i].snr = snr;
+    gps->sats[i].used = 0;
+
+    for (j = 0; j < 12; j++)
+	if (svn == sol[j])
+	    gps->sats[i].used = 1;
+    return;
 }
 
 static int hex(char c)
@@ -278,7 +310,12 @@ int nmea_decode(char xor, struct gps_state *gps)
     char *p;
 
     /* NMEA lines should start with a '$' */
-    if (packet[0] != '$') return 0;
+    if (packet[0] != '$') {
+	/* recognize tripmate's 'ASTRAL' message */
+	if (packet_idx >= 6 && memcmp(packet, "ASTRAL", 6) == 0)
+	    serial_send("$IIGPQ,ASTRAL*73\r\n", 18);
+	return 0;
+    }
 
     /* and end with '*XX' */
     n = strlen(packet);
@@ -332,37 +369,34 @@ int nmea_decode(char xor, struct gps_state *gps)
 	tmp.bearing_set = nmea_float(&p, &b); skip(&p);
 	p++; skip(&p); p++; skip(&p);
 	p++; skip(&p); p++; skip(&p);
-	tmp.speed_set   = nmea_float(&p, &tmp.speed);
+	tmp.speed_set = nmea_float(&p, &tmp.speed);
 
 	if (tmp.bearing_set)
 		tmp.bearing = degtorad(b);
     } else if (memcmp(&packet[1], "GPGSV", 5) == 0) {
-	int i, j;
-	p++; skip(&p); p++; skip(&p); p++; skip(&p);
-	for (i = 0; i < MAX_TRACKED_SATS; i++)
-	    if (sats[i].svn == 0)
-		break;
-	if (i < MAX_TRACKED_SATS) {
-	    do {
-		sats[i].svn = nmea_int(&p);
-		sats[i].used = 0;
-		sats[i].elv = degtorad(nmea_int(&p));
-		sats[i].azm = degtorad(nmea_int(&p));
-		sats[i].snr = nmea_int(&p) - 30;
+	/* $GPGSV,nmsg,msg,nsat,svn1,elv1,azm1,snr1,...,svn4,elv4,azm4,snr4* */
+	double elv, azm;
+	int i, svn, snr;
+	int nmsg, msg;
+	nmsg = nmea_int(&p);
+	msg = nmea_int(&p);
+	p++; skip(&p);
 
-		for (j = 0; j < MAX_TRACKED_SATS; j++)
-		    if (sats[i].svn == sol[j])
-			sats[i].used = 1;
-
-	    } while(sats[i++].svn && i < MAX_TRACKED_SATS);
+	for (i = 0; i < 4; i++) {
+	    svn = nmea_int(&p);
+	    elv = degtorad(nmea_int(&p));
+	    azm = degtorad(nmea_int(&p));
+	    snr = nmea_int(&p) - 30;
+	    if (svn)
+		new_sat(gps, svn, elv, azm, snr);
 	}
+	got_sats = (nmsg == msg);
     } else if (memcmp(&packet[1], "GPGSA", 5) == 0) {
+	/* $GPGSA,mode,fix(0/1/2D/3D),sat1,...,sat12,pdop,hdop,vdop* */
 	int i;
 	p++; skip(&p); p++; skip(&p);
 	for (i = 0; i < 12; i++)
 	    sol[i] = nmea_int(&p);
-	for (i = 0; i < MAX_TRACKED_SATS; i++)
-	    sats[i].svn = 0;
     }
     return new_measurement(&tmp, gps);
 }
@@ -393,6 +427,7 @@ static int nmea_update(char c, struct gps_state *gps)
 
     packet[packet_idx++] = c;
     xor ^= c;
+
     return 0;
 }
 

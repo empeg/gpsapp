@@ -9,7 +9,7 @@
 #include "gpsapp.h"
 #include "vfdlib.h"
 
-#define MAX_TRACK 128
+#define MAX_TRACK 512
 static struct xy tracklog[MAX_TRACK];
 static int tracklog_size;
 static int tracklog_idx;

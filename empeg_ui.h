@@ -11,7 +11,7 @@
 
 int  empeg_init(void);
 void empeg_free(void);
-int  empeg_waitmenu(void);
+int  empeg_waitmenu(const char **menu);
 int  empeg_getkey(unsigned long *key);
 void empeg_updatedisplay(const unsigned char *screen);
 

@@ -13,8 +13,14 @@ Installation
   /dev/hda2 mounted as /programs0. In-depth instructions can be found on
   the wonderful "Unofficial Empeg/RioCar BBS" (http://empeg.comms.net/).
 
-- Upload "gpsapp" and "hack_init" to /programs0 and make sure they are
-  executable (chmod 755).
+- Upload "gpsapp", "incar" and "hack_init" to /programs0 and make sure
+  they are executable (chmod 755).
+
+- Put 'M50gpsapp' in /etc/preinit.d, so that gpsapp is started when the
+  player is booted. You can specify a specific GPS protocol in M50gpsapp
+  (currently NMEA/Garmin/TSIP/TAIP). The shell really doesn't like CR
+  characters, I'm not sure if there is a windows editor that avoids
+  adding these.
 
 - We need to keep the player application off of the serial port. This
   involves running the player with the -s- option, which can as far as I
@@ -25,14 +31,34 @@ Installation
   When hack_init is called as /empeg/bin/play-s it will check whether we
   are in DC (Car) mode, and adds the '-s-' flag to the player's commandline.
 
-  So you only need to do 'rw ; hack_init ; ro' once and you're set.
+  So you only need to do 'rw ; /programs0/hack_init ; ro' once and you're set.
 
-- Put 'M50gpsapp' in /etc/preinit.d, so that gpsapp is started when the
-  player is booted. You can set a specific GPS protocol in M50gpsapp
-  (currently NMEA/Garmin/TSIP/TAIP).
+- At this point, when the player starts in the car (or forced to DC mode
+  with hijack), gpsapp will be started and will show up as GPSapp in the
+  hijack menu. It has basic functionality, i.e. it can run and 'track'
+  movement from a GPS attached to the serial port.
 
-- At this point, gpsapp has basic functionality, i.e. it can run and
-  'track' movement from a GPS attached to the serial port.
+- When selected in the hijack menu, it should initially show 'Waiting
+  for data from GPS receiver'. This message will be visible until either
+  data is received over the serial port, presumably from the GPS, or a
+  button is pressed,
+
+  If the first message is 'Unknown protocol, using NMEA' the M50gpsapp
+  script probably has CR/LF (dos) instead of just LF (unix) at the end
+  of the line.
+
+- Once any input is received you are in the 'satellite signal strength'
+  view. This shows signal strength bars in the left of the screen, and
+  approximate satellite positions in the right hand. As long as we
+  haven't received any of this info it shows 'Looking for satellites',
+  some GPS's never send this information, others will only start sending
+  it once they have achieved a 'fix'.
+  Long press the down button (2-3 secs) and you're in the map screen,
+  down, and a couple of left or right button presses should bring you to
+  the 'coordinates' toggle. Turn it on by pressing down again and the
+  last know location should show in the top-left of the screen. If it is
+  0.0/0.0 we haven't received any location information from the GPS
+  receiver.
 
 - Driving instructions are converted from the raw route descriptions
   from http://mapsonus.switchboard.com. If you select 'show lat/long'
@@ -54,16 +80,31 @@ Installation
 
 Short operating instructions
 
-- Select the entry "GPS" in the Hijack menu.
-- gpsapp will wait until it either receives a location from the gps
+- Select the entry "GPSapp" in the Hijack menu.
+- gpsapp will wait until it either receives something from the gps
   attached to the serial port, or a key is pressed.
 
-- Default screen is a map of route around the current location.
+- Satellite screen shows visible satellites and their signal strengths
+    top button    exit the application
+    bottom button (long-press)  switch to the map screen
+		  (short-press) enter menu
+
+- Map screen is a map of the route around the current location.
     top button    exit the application
     left button   zoom out
     right button  zoom in
-    bottom button (long-press)  switch to a text mode
+    bottom button (long-press)  switch to the route screen
 		  (short-press) enter menu
+    knob rotation select previous/next waypoint in the currently loaded
+		  route, doesn't do anything when no route is loaded.
+
+- Route screen, shows the next 4 waypoints, or "No route loaded".
+    top button    exit the application
+    bottom button (long-press)  switch to the satellite screen
+		  (short-press) enter menu
+    knob rotation select previous/next waypoint in the currently loaded
+		  route, doesn't do anything when no route is loaded.
+    left/right	  same as knob rotate, select previous/next waypoint.
 
 - Menu
     top button    exit the menu
@@ -76,8 +117,4 @@ Short operating instructions
     left button   previous route in /programs0/routes
     right button  next route in /programs0/routes
     bottom button load selected route
-
-- Text mode
-    shows the next 4 waypoints in the currently active route.
-
 

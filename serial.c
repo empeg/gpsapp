@@ -186,12 +186,12 @@ void serial_poll()
 
 	/* According to ellweber, bearing measurements are pretty flaky when
 	 * we're moving slower than 1-2 km/h */
-	if (gps_speed >= 1500)
+	if (gps_speed >= 2000)
 	    gps_bearing = gps_state.bearing;
 
 	route_locate();
 
-	if (gps_speed >= 1500)
+	if (gps_speed >= 2000)
 	    route_update_vmg();
 
 	do_refresh = 1;

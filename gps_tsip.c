@@ -16,15 +16,10 @@ static int datestamp, timestamp, sat_track_update;
 static double latitude, longtitude;
 static float spd_e, spd_n, spd_u;
 
-#define MAX_TRACKED_SATS 12
-static struct gps_sat sats[MAX_TRACKED_SATS];
-
 static int initialized, fix;
 
 static int update(struct gps_state *gps)
 {
-    int i;
-
     gps->time      = datestamp + timestamp;
     gps->lat       = latitude;
     gps->lon       = longtitude;
@@ -38,9 +33,6 @@ static int update(struct gps_state *gps)
 	gps->bearing = radtodeg(atan2(spd_e, spd_n));
 	if (gps->bearing < 0) gps->bearing += 360;
     }
-
-    for (i = 0; i < MAX_TRACKED_SATS; i++)
-	gps->sats[i] = sats[i];
 
     return 1;
 }
@@ -173,7 +165,7 @@ static void tsip_r46health(void)
 	tsip_c27req_signal_levels();
 }
 
-static int tsip_r47sat_signals(void)
+static int tsip_r47sat_signals(struct gps_state *gps)
 {
     unsigned char count, svn;
     float snr;
@@ -190,21 +182,28 @@ static int tsip_r47sat_signals(void)
 
     for (i = 0; i < count; i++) {
 	svn = packet[2 + 5 * i];
-	if (sats[i].svn != svn) {
-	    sats[i].elv = 0.0;
-	    sats[i].azm = 0.0;
+	if (gps->sats[i].svn != svn) {
+	    gps->sats[i].elv = 0.0;
+	    gps->sats[i].azm = 0.0;
 	}
-	sats[i].svn = svn;
+	gps->sats[i].svn = svn;
+	gps->sats[i].time = datestamp + timestamp;
 	snr = Single(&packet[3 + 5 * i]);
-	sats[i].snr = fabsf(snr);
-	sats[i].used = snr > 0;
+	gps->sats[i].snr = fabsf(snr);
+	gps->sats[i].used = snr > 0;
     }
     for (i = count; i < MAX_TRACKED_SATS; i++)
-	sats[i].svn = 0;
+	gps->sats[i].svn = 0;
 
     /* update satellite tracking status */
     if (datestamp + timestamp > sat_track_update)
 	tsip_c3Creq_sat_track_status();
+
+    /* If we don't have a fix yet there isn't that much data coming from the
+     * receiver, which is a bit uncomfortable for the end-user (gpsapp looks to
+     * be stuck). So let's start a continuous stream of signal level requests */
+    if (!fix)
+	tsip_c27req_signal_levels();
 
     return 1;
 }
@@ -250,26 +249,24 @@ static int tsip_r56velocity(struct gps_state *gps)
     return upd;
 }
 
-static void tsip_r5Csat_track_status(void)
+static void tsip_r5Csat_track_status(struct gps_state *gps)
 {
-    float snr, elv, azm;
-    int i;
+    float elv, azm;
+    int i, time;
     unsigned char svn;
 
     if (packet_idx != 25) return;
 
     svn = packet[1];
-    snr = Single(&packet[5]);
+    time = datestamp + (int)Single(&packet[9]);
     elv = Single(&packet[13]);
     azm = Single(&packet[17]);
 
     for (i = 0; i < MAX_TRACKED_SATS; i++) {
-	if (svn != sats[i].svn) continue;
-
-	sats[i].snr = fabsf(snr);
-	sats[i].used = snr > 0;
-	sats[i].elv = elv;
-	sats[i].azm = azm;
+	if (svn != gps->sats[i].svn) continue;
+	gps->sats[i].time = time;
+	gps->sats[i].elv = elv;
+	gps->sats[i].azm = azm;
     }
 }
 
@@ -329,10 +326,10 @@ static int tsip_decode(struct gps_state *gps)
     case 0x41: tsip_r41time(); break;
     case 0x45: tsip_r45version(); break;
     case 0x46: tsip_r46health(); break;
-    case 0x47: upd = tsip_r47sat_signals(); break;
+    case 0x47: upd = tsip_r47sat_signals(gps); break;
     case 0x55: tsip_r55io_options(); break;
     case 0x56: upd = tsip_r56velocity(gps); break;
-    case 0x5C: tsip_r5Csat_track_status(); break;
+    case 0x5C: tsip_r5Csat_track_status(gps); break;
     case 0x82: tsip_r82dgps_fix(); break;
     case 0x84: upd = tsip_r84position(gps); break;
     }

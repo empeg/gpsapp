@@ -136,11 +136,28 @@ static void refresh_display(void)
 static int handle_input(void)
 {
     static struct timeval pressed;
-    struct timeval released;
+    struct timeval now;
     unsigned long key;
     int rc;
 
     serial_poll();
+
+    if (pressed.tv_sec) {
+	gettimeofday(&now, NULL);
+	timesub(&now, &pressed);
+	/* LONG_PRESS? */
+	if (now.tv_sec >= 1) {
+	    switch (visual) {
+	    case VIEW_SATS:  visual = VIEW_MAP; break;
+	    case VIEW_MAP:   visual = VIEW_ROUTE; break;
+	    case VIEW_ROUTE: visual = VIEW_SATS; break;
+	    }
+	    pressed.tv_sec = 0;
+	    do_refresh = 1;
+	    return 0;
+	}
+    }
+
     rc = empeg_getkey(&key);
     if (rc != 1) return rc;
 
@@ -159,17 +176,9 @@ static int handle_input(void)
 	break;
 
     case IR_BOTTOM_BUTTON_RELEASED:
-	gettimeofday(&released, NULL);
-	timesub(&released, &pressed);
-	/* LONG_PRESS? */
-	if (released.tv_sec >= 1 || released.tv_usec > 500000) {
-	    switch (visual) {
-	    case VIEW_SATS:  visual = VIEW_MAP; break;
-	    case VIEW_MAP:   visual = VIEW_ROUTE; break;
-	    case VIEW_ROUTE: visual = VIEW_SATS; break;
-	    }
-	}
-	else if (load_route) {
+	if (pressed.tv_sec == 0) break;
+	pressed.tv_sec = 0;
+	if (load_route) {
 	    route_load();
 	    load_route = 0;
 	    menu = 0;
@@ -206,8 +215,13 @@ static int handle_input(void)
 	    if (--menu_pos < 0)
 		menu_pos = MENU_ENTRIES - 1;
 	}
-	else if (visual == VIEW_MAP)
-	    draw_zoom(0);
+	else {
+	    switch (visual) {
+	    case VIEW_SATS:  break;
+	    case VIEW_MAP:   draw_zoom(0); break;
+	    case VIEW_ROUTE: route_skipwp(-1); break;
+	    }
+	}
 	do_refresh = 1;
 	break;
 
@@ -218,8 +232,13 @@ static int handle_input(void)
 	    if (++menu_pos >= MENU_ENTRIES)
 		menu_pos = 0;
 	}
-	else if (visual == VIEW_MAP)
-	    draw_zoom(1);
+	else {
+	    switch (visual) {
+	    case VIEW_SATS:  break;
+	    case VIEW_MAP:   draw_zoom(1); break;
+	    case VIEW_ROUTE: route_skipwp(1); break;
+	    }
+	}
 	do_refresh = 1;
 	break;
 
@@ -227,11 +246,13 @@ static int handle_input(void)
 	route_skipwp(-1);
 	do_refresh = 1;
 	break;
+
     case IR_KNOB_RIGHT:
 	route_skipwp(1);
 	route_locate();
 	do_refresh = 1;
 	break;
+
     case IR_KNOB_PRESSED:
     default:
 	break;
@@ -242,6 +263,7 @@ static int handle_input(void)
 
 int main(int argc, char **argv)
 {
+    const char *menu[] = { "GPSapp", NULL };
     struct timeval timeout;
     int rc = 0;
 
@@ -260,12 +282,12 @@ int main(int argc, char **argv)
 	serial_protocol(argv[1]);
 
     while (rc != -1) {
-	if (empeg_waitmenu() == -1)
+	if (empeg_waitmenu(menu) == -1)
 	    break;
 
 	serial_open();
 
-	draw_msg("Waiting for GPS location...");
+	draw_msg("Waiting for data from GPS receiver");
 	draw_display();
 
 	while(1) {
