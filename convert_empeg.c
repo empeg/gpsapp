@@ -96,9 +96,9 @@ char *format_coord(char *buf, double latr, double lonr)
 	lon_deg = lon; lon = (lon - lon_deg) * 60;
 	lat_min = lat; lat = (lat - lat_min) * 60;
 	lon_min = lon; lon = (lon - lon_min) * 60;
-	sprintf(buf, "%2d%c%02d\"%04.1f' %3d%c%02d\"%04.1f'",
+	sprintf(buf, "%2d%c %02d'%04.1f\" %3d%c %02d'%04.1f\"",
 		lat_deg, latr >= 0 ? 'N' : 'S', lat_min, lat,
-		lon_deg, lonr >= 0 ? 'W' : 'E', lon_min, lon);
+		lon_deg, lonr >= 0 ? 'E' : 'W', lon_min, lon);
 	}
 	break;
     case 1:
@@ -107,9 +107,9 @@ char *format_coord(char *buf, double latr, double lonr)
 	lat = fabs(lat); lon = fabs(lon);
 	lat_deg = lat; lat = (lat - lat_deg) * 60;
 	lon_deg = lon; lon = (lon - lon_deg) * 60;
-	sprintf(buf, "%2d%c%06.3f\" %3d%c%06.3f\"",
+	sprintf(buf, "%2d%c %06.3f' %3d%c %06.3f'",
 		lat_deg, latr >= 0 ? 'N' : 'S', lat,
-		lon_deg, lonr >= 0 ? 'W' : 'E', lon);
+		lon_deg, lonr >= 0 ? 'E' : 'W', lon);
 	}
 	break;
     case 0:

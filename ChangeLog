@@ -1,3 +1,12 @@
+Changes in v0.14
+
+ * Messed up E/W and '/" marks in the coordinates.
+ * parse_mapsonus had trouble with the capitalization of the XMP tags,
+   rewrote that part of the parser so that we don't need them. i.e we
+   can finally parse the routes when they are saved as plain text.
+ * Made the scale value brighter again.
+ * Only updating the tracklog when we're moving faster than 2km/h.
+
 Changes in v0.13
 
  * Fixed formatdist, now it takes a signed integer.

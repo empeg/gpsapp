@@ -7,7 +7,7 @@ from convert import *
 discard="((Start|End)\sPoint|FOLLOW|CONTINUE|BEARS?|TURN|SHARPLY|LEFT|RIGHT|onto|as road goes into|as it|Head\s(NORTH|WEST|EAST|SOUTH)\son)\s?"
 
 # words that commonly start a new line
-sol="(START|PLAN-DESCR|TURN\s+\d+|TURN-STREET|FORMAT-TYPE|MATCH-LOCAL-MAP|END|KM)\s"
+sol="(START|PLAN-DESCR|TURN\s+\d+|TURN-STREET|FORMAT-TYPE|MATCH-LOCAL-MAP|END|KM|MIN)\s"
 
 class Wpoint:
     def __init__(self, coord, desc = ""):
@@ -59,17 +59,26 @@ def parse(mapsonus_rawroute):
 	    route[pnt] = Wpoint(NAD27toWGS84(Coord(lat, long)), desc)
 	    next_point = pnt + npts
 	    continue
-	elif parts[0] == "KM":
-	    while parts[0] != "<xmp>":
-		parts = parts[1:]
-	    parts = parts[1:]
+	elif parts[0] == "MIN":
+	    # skip until the first valid float
+	    parts = parts[2:]
+	    while 1:
+		try:
+		    float(parts[0])
+		except ValueError:
+		    parts = parts[1:]
+		    continue
+		break
 	    try:
 		for i in range(0, len(parts), 2):
-		    lat  = float(re.sub("</xmp>", "", parts[i+1]))
 		    long = float(parts[i])
+		    lat  = float(parts[i+1])
 		    coords.append(NAD27toWGS84(Coord(lat, long)))
 	    except (IndexError, ValueError):
-		continue
+		pass
+	    # parsing the last point invariably fails, so we just append
+	    # the last known waypoint in the route.
+	    coords.append(route[next_point-1].coord)
 
     # create a route as a combination of 'shape' and 'turn' information
     # make sure we discard duplicate records.

@@ -201,7 +201,6 @@ void serial_poll()
 	route_recenter();
 
 	toTM(&gps_coord);
-	track_pos();
 
 	gps_speed = sqrt(gps_state.spd_east * gps_state.spd_east +
 			 gps_state.spd_north * gps_state.spd_north +
@@ -209,8 +208,10 @@ void serial_poll()
 
 	/* According to ellweber, bearing measurements are pretty flaky when
 	 * we're moving slower than 1-2 km/h */
-	if (gps_speed >= 2000)
+	if (gps_speed >= 2000) {
+	    track_pos();
 	    gps_bearing = gps_state.bearing;
+	}
 
 	route_locate();
 

@@ -189,7 +189,7 @@ void draw_scale(void)
 
     formatdist(buf, 8 << map_scale, 0);
     vfdlib_drawText(screen, buf, MAX_X - vfdlib_getTextWidth(buf, 0), 1, 0,
-		    VFDSHADE_MEDIUM);
+		    VFDSHADE_BRIGHT);
 }
 
 void draw_gpscoords(void)
