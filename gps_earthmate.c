@@ -21,21 +21,19 @@ static short INT16(unsigned char *p)
     return ((p[1] << 8) | p[0]);
 }
 
-static float Single(char *p)
+static int INT32(unsigned char *p)
 {
-    union { char c[4]; float v; } u;
-    u.c[3] = p[3]; u.c[2] = p[2]; u.c[1] = p[1]; u.c[0] = p[0];
-    return u.v;
+    return ((p[3] << 24) | (p[2] << 16) | (p[1] << 8) | p[0]);
 }
 
 static int em_1000geodpos(struct gps_state *gps)
 {
     double speed;
     int bearing;
-    gps->lat = radtodeg(Single(&packet[WD(27)])/ 100000000);
-    gps->lon = radtodeg(Single(&packet[WD(28)])/ 100000000);
-    bearing = INT16(&packet[WD(36)])/ 1000;
-    speed = Single(&packet[WD(34)])/100;
+    gps->lat = radtodeg(INT32(&packet[WD(27)]) * 1.0e-8);
+    gps->lon = radtodeg(INT32(&packet[WD(28)]) * 1.0e-8);
+    speed = ((unsigned int)INT32(&packet[WD(34)])) * 1.0e-2;
+    bearing = INT16(&packet[WD(36)]) * 1.0e-3;
     gps->bearing = radtodeg(bearing);
     gps->spd_up = 0.0;
     gps->spd_east  = sin(bearing) * speed;
@@ -50,13 +48,24 @@ static int em_1000geodpos(struct gps_state *gps)
 
 static int em_1002chsum(struct gps_state *gps)
 {
-    int j, svn, snr;
+    int j, status, svn, snr, used, valid;
+    int timestamp, datestamp, time;
+
+#define EPOCHDIFF 315532800 /* difference between GPS and UNIX time */
+#define LEAP_SECONDS 13
+    datestamp = INT16(&packet[WD(10)]) * 7 * 86400 + EPOCHDIFF;
+    timestamp = INT32(&packet[WD(11)]) + LEAP_SECONDS;
+    time = datestamp + timestamp;
     
     for (j = 0; j < 12; j++) {
+	status = INT16(&packet[WD(15 + (3 * j))]);
+	used  = status & 0x1;
+	valid = status & 0x4;
 	svn = INT16(&packet[WD(16 + (3 * j))]);
-	snr = INT16(&packet[WD(17 + (3 * j))]);
+	snr = INT16(&packet[WD(17 + (3 * j))]) / 3; /* scaling snr to 0-24 */
 
-	new_sat(gps, svn, -1, -1, snr);
+	new_sat(gps, svn, valid ? time : UNKNOWN_TIME, UNKNOWN_ELV, UNKNOWN_AZM,
+		snr, used);
     }
 
     return 1;
@@ -69,10 +78,10 @@ static int em_1003sats(struct gps_state *gps)
     
     for (j = 0; j < INT16(&packet[WD(14)]); j++) {
 	svn = INT16(&packet[WD(15 + (3 * j))]);
-	elv = degtorad(INT16(&packet[WD(17 + (3 * j))]));
-	azm = degtorad(INT16(&packet[WD(16 + (3 * j))]));
+	elv = radtodeg(INT16(&packet[WD(17 + (3 * j))]) * 1.0e-4);
+	azm = radtodeg(INT16(&packet[WD(16 + (3 * j))]) * 1.0e-4);
 
-	new_sat(gps, svn, elv, azm, -1);
+	new_sat(gps, svn, UNKNOWN_TIME, elv, azm, UNKNOWN_SNR, UNKNOWN_USED);
     }
 
     return 1;

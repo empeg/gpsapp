@@ -48,7 +48,13 @@ struct gps_protocol {
     int (*update)(char c, struct gps_state *state);
 };
 
-void new_sat(struct gps_state *gps, int svn, int elv, int azm, int snr);
+#define UNKNOWN_TIME -1
+#define UNKNOWN_ELV -1
+#define UNKNOWN_AZM -1
+#define UNKNOWN_SNR -1
+#define UNKNOWN_USED -1
+void new_sat(struct gps_state *gps, int svn, int time, int elv, int azm,
+	     int snr, int used);
 int conv_date(int year, int mon, int day);
 
 extern struct gps_protocol *gps_protocols;

@@ -24,7 +24,7 @@ struct gps_info {
     int		 fix;
 };
 
-static int sol[12], timestamp, got_sats;
+static int timestamp, got_sats;
 
 /* convert year/month/day to unix time */
 int conv_date(int year, int mon, int day)
@@ -134,9 +134,11 @@ static int new_measurement(const struct gps_info *tmp, struct gps_state *gps)
     return update;
 }
 
-void new_sat(struct gps_state *gps, int svn, int elv, int azm, int snr)
+void new_sat(struct gps_state *gps, int svn, int time, int elv, int azm, int snr, int used)
 {
-    int i, j, old, old_time = 0;
+    int i, old, old_time = 0;
+
+    if (!svn) return;
 
     for (i = 0; i < MAX_TRACKED_SATS; i++)
 	if (gps->sats[i].svn == svn)
@@ -153,20 +155,17 @@ void new_sat(struct gps_state *gps, int svn, int elv, int azm, int snr)
     i = old;
 
 update:
-    gps->sats[i].time = timestamp;
     gps->sats[i].svn = svn;
-    if (elv != -1)
+    if (time != UNKNOWN_TIME)
+	gps->sats[i].time = time;
+    if (elv != UNKNOWN_ELV)
 	gps->sats[i].elv = elv;
-    if (azm != -1)
+    if (azm != UNKNOWN_AZM)
 	gps->sats[i].azm = azm;
-    if (snr != -1)
+    if (snr != UNKNOWN_SNR)
 	gps->sats[i].snr = snr;
-    gps->sats[i].used = 0;
-
-    for (j = 0; j < 12; j++)
-	if (svn == sol[j])
-	    gps->sats[i].used = 1;
-    return;
+    if (used != UNKNOWN_USED)
+	gps->sats[i].used = used;
 }
 
 static int hex(char c)
@@ -389,17 +388,20 @@ int nmea_decode(char xor, struct gps_state *gps)
 	    svn = nmea_int(&p);
 	    elv = degtorad(nmea_int(&p));
 	    azm = degtorad(nmea_int(&p));
-	    snr = nmea_int(&p) - 30;
-	    if (svn)
-		new_sat(gps, svn, elv, azm, snr);
+	    snr = (nmea_int(&p) - 20) / 2;
+
+	    new_sat(gps, svn, timestamp, elv, azm, snr, UNKNOWN_USED);
 	}
 	got_sats = (nmsg == msg);
     } else if (memcmp(&packet[1], "GPGSA", 5) == 0) {
 	/* $GPGSA,mode,fix(0/1/2D/3D),sat1,...,sat12,pdop,hdop,vdop* */
-	int i;
+	int i, svn;
 	p++; skip(&p); p++; skip(&p);
+	for (i = 0; i < MAX_TRACKED_SATS; i++)
+	    gps->sats[i].used = 0;
 	for (i = 0; i < 12; i++)
-	    sol[i] = nmea_int(&p);
+	    svn = nmea_int(&p);
+	    new_sat(gps, svn, timestamp, UNKNOWN_ELV, UNKNOWN_AZM, UNKNOWN_SNR, 1);
     }
     return new_measurement(&tmp, gps);
 }
