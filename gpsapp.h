@@ -8,6 +8,7 @@
 #define _GPSAPP_H_
 
 #include <sys/time.h>
+#include "gps_protocol.h"
 
 /* configuration settings */
 extern int show_scale;
@@ -46,12 +47,12 @@ extern struct coord coord_center;
 double degtorad(const double deg);
 double intdegtorad(const int deg);
 double radtodeg(const double rad);
-char *formatdist(const unsigned int distance);
-char *time_estimate(const unsigned int distance);
+char *formatdist(char *buf, const unsigned int distance);
+char *time_estimate(char *buf, const unsigned int distance);
 
-void toTM(const struct coord *point, const struct coord *center, struct xy *xy);
+void toTM(struct coord *point);
 long long distance2(const struct xy *coord1, const struct xy *coord2);
-int bearing(const struct xy *coord1, const struct xy *coord2);
+double bearing(const struct xy *coord1, const struct xy *coord2);
 int towards(const struct xy *here, const struct xy *coord, const int dir);
 
 /* screen update functions (draw.c) */
@@ -69,6 +70,7 @@ void draw_gpscoords(void);
 void draw_wpstext(void);
 void draw_popup(char *text);
 void draw_display(void);
+void err(char *msg);
 
 /* tracking functions (track.c) */
 void track_init(void);
@@ -86,17 +88,16 @@ void route_locate(void);
 void route_draw(struct xy *cur_pos);
 int route_getwp(const int wp, struct xy *pos, unsigned int *dist, char **desc);
 
-/* serial port functions (serial.c) */
+/* serial port/gps interfacing functions (serial.c) */
+
+extern struct gps_state gps_state;
+extern struct coord     gps_coord;
+extern int              gps_avgvmg;    /* average velocity made good */
+#define AVGVMG_SHIFT 5
+
+void serial_protocol(char *proto);
 void serial_open(void);
 void serial_close(void);
 void serial_poll(void);
 
-/* nmea decoding (nmea.c) */
-extern struct coord gps_coord;
-extern int	    gps_bearing;
-extern int	    gps_speed;
-extern time_t       gps_time;
-void nmea_decode(char *line, char xor);
-
 #endif
-

@@ -46,11 +46,6 @@ static char *menu_msg[] = {
 };
 #define MENU_ENTRIES 8
 
-extern int stats_fromTM;
-extern int stats_toTM;
-extern int stats_distance;
-extern int stats_bearing;
-
 void timesub(struct timeval *from, struct timeval *val)
 {
     from->tv_sec -= val->tv_sec;
@@ -100,7 +95,7 @@ static void refresh_display(void)
 	}
 
 	/* draw our own location */
-	draw_mark(&gps_coord.xy, gps_bearing, VFDSHADE_BRIGHT);
+	draw_mark(&gps_coord.xy, gps_state.bearing, VFDSHADE_BRIGHT);
 
 	vfdlib_setClipArea(0, 0, VFD_WIDTH, VFD_HEIGHT);
 	draw_info();
@@ -115,9 +110,15 @@ static void refresh_display(void)
     draw_display();
 
 #ifndef __arm__
-    fprintf(stderr, "conv stats: TM>GPS %d GPS>TM %d DIST %d HDG %d\n",
-	    stats_fromTM, stats_toTM, stats_distance, stats_bearing);
-    stats_fromTM = stats_toTM = stats_distance = stats_bearing = 0;
+    {
+	extern int stats_toTM;
+	extern int stats_distance;
+	extern int stats_bearing;
+
+	fprintf(stderr, "conv stats: GPS>TM %d DIST %d HDG %d\n",
+		stats_toTM, stats_distance, stats_bearing);
+	stats_toTM = stats_distance = stats_bearing = 0;
+    }
 #endif
 }
 
@@ -222,6 +223,10 @@ int main(int argc, char **argv)
     h0 = vfdlib_getTextHeight(0);
 
     route_init();
+
+    /* we need a way to look the protocol up in a config file? */
+    if (argc > 1)
+	serial_protocol(argv[1]);
 
     while (rc != -1) {
 	if (empeg_waitmenu() == -1)

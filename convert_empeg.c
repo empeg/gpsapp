@@ -13,7 +13,6 @@
 #define WGS84_invf 298.257223563
 #define UTM_k0	   0.9996
 
-int stats_fromTM;
 int stats_toTM;
 int stats_distance;
 int stats_bearing;
@@ -33,12 +32,11 @@ double radtodeg(const double rad)
     return rad * (360.0 / (2.0 * M_PI));
 }
 
-char *formatdist(const unsigned int dist)
+/* buf needs to be at least 10 characters */
+char *formatdist(char *buf, const unsigned int dist)
 {
 #define meters_per_mile 1609.344
 #define meters_per_foot 0.3048
-    static char buf[10];
-
     if (show_metric) {
 	if (dist < 1000)
 	    sprintf(buf, "%um ", dist);
@@ -50,46 +48,66 @@ char *formatdist(const unsigned int dist)
 		sprintf(buf, "%ukm", hectameters / 10);
 	}
     } else {
-	if (dist < 305) // ~1000 feet
+	if (dist < 161) // ~ 0.1 mile, 305 would be ~1000 feet
 	    sprintf(buf, "%uft", (dist * 10000) / 3048);
 	else {
-	    unsigned int decimiles = (dist * 1000) / 160934; // .4
-	    if (decimiles < 1000) {
-		sprintf(buf, "%u.%umi", decimiles / 10, decimiles % 10);
-	    } else
-		sprintf(buf, "%umi", decimiles / 10);
+	    unsigned int centimiles = (dist * 1000) / 16093; // .44
+	    if (centimiles < 1000)
+		sprintf(buf, "%u.%umi", centimiles / 100, centimiles % 100);
+	    else if (centimiles < 10000)
+		sprintf(buf, "%u.%umi", centimiles / 100, (centimiles/10) % 10);
+	    else
+		sprintf(buf, "%umi", centimiles / 10);
 	}
     }
     return buf;
 }
 
-char *time_estimate(const unsigned int dist)
+/* buf needs to be at least 10 characters */
+char *time_estimate(char *buf, const unsigned int dist)
 {
-    static char buf[10];
-    int hour, min, sec = 0;
+    struct tm *tm;
+    int hour, min;
+    time_t sec;
+    int vmg = abs(gps_avgvmg >> AVGVMG_SHIFT);
 
-    if (dist && gps_speed)
-	sec = ((dist * 3600) / (gps_speed >> 8));
-
-    if (!dist || gps_speed) {
+    if (!dist) {
 	if (show_abs) {
-	    struct tm *tm;
-	    time_t s = sec + gps_time;
-	    tm = localtime(&s);
+	    tm = localtime(&gps_state.time);
 
 	    hour = tm->tm_hour;
 	    min  = tm->tm_min;
-	    sec  = tm->tm_sec;
-	} else {
-	    min = sec / 60;
-	    sec -= min * 60;
-	    hour = min / 60;
-	    min -= hour * 60;
-	}
-	if (hour) sprintf(buf, "%02d:%02d", hour, min);
-	else      sprintf(buf, "%02dm%02d", min, sec);
-    } else
+	    sprintf(buf, "%02d:%02d", hour, min);
+	} else
+	    sprintf(buf, "00m00");
+	return buf;
+    }
+
+    if (!vmg) {
 	sprintf(buf, "--?--");
+	return buf;
+    }
+
+    sec = (dist * 3600) / vmg;
+
+    if (show_abs) {
+	sec += gps_state.time;
+	tm = localtime(&sec);
+
+	hour = tm->tm_hour;
+	min  = tm->tm_min;
+
+	sprintf(buf, "%02d:%02d", hour, min);
+    } else {
+	min  = sec / 60;
+	sec -= min * 60;
+	hour = min / 60;
+	min -= hour * 60;
+
+	if (hour >= 100) sprintf(buf, "**:**");
+	else if (hour)   sprintf(buf, "%02d:%02d", hour, min);
+	else	         sprintf(buf, "%02dm%02d", min, (int)sec);
+    }
 
     return buf;
 }
@@ -112,10 +130,13 @@ static double M(const double phi)
 		      (35.0 * es3 / 3072.0) * sin(6.0 * phi));
 }
 
-void toTM(const struct coord *point, const struct coord *center, struct xy *xy)
+void toTM(struct coord *point)
 {
     double phi, phi0, lambda, lambda0;
     double m, m0, sin_phi, cos_phi, tan_phi, es, et2, n, t, c, A;
+
+    struct coord *center = &coord_center;
+    struct xy *xy = &point->xy;
 
     phi     = point->lat;
     lambda  = point->lon;
@@ -160,15 +181,17 @@ long long distance2(const struct xy *coord1, const struct xy *coord2)
     return dist;
 }
 
-int bearing(const struct xy *coord1, const struct xy *coord2)
+double bearing(const struct xy *coord1, const struct xy *coord2)
 {
-    int dx, dy, b;
+    int dx, dy;
+    double b;
+
     dx = coord2->x - coord1->x;
     dy = coord2->y - coord1->y;
     if (!dx && !dy) return -1;
 
-    b = radtodeg(atan2(dx, dy));
-    if (b < 0) b += 360;
+    b = atan2(dx, dy);
+
     stats_bearing++;
     return b;
 }
@@ -178,7 +201,7 @@ int towards(const struct xy *here, const struct xy *coord, const int dir)
     int b;
     
     if (dir == -1) return 1;
-    b = bearing(here, coord) - dir;
+    b = radtodeg(bearing(here, coord)) - dir;
     if (b < 0) b += 360;
     return (b <= 90 || b >= 270);
 }

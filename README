@@ -28,7 +28,8 @@ Installation
   So you only need to do 'rw ; hack_init ; ro' once and you're set.
 
 - Put 'M50gpsapp' in /etc/preinit.d, so that gpsapp is started when the
-  player is booted.
+  player is booted. You can set a specific GPS protocol in M50gpsapp
+  (currently NMEA/Garmin/TSIP/TAIP).
 
 - At this point, gpsapp has basic functionality, i.e. it can run and
   'track' movement from a GPS attached to the serial port.
@@ -53,7 +54,7 @@ Installation
 
 Short operating instructions
 
-- Select the entry "GPS" in the hijack menu.
+- Select the entry "GPS" in the Hijack menu.
 - gpsapp will wait until it either receives a location from the gps
   attached to the serial port, or a key is pressed.
 

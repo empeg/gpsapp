@@ -405,10 +405,6 @@ void vfdlib_drawLineClipped(char *buffer, int x0, int y0, int x1, int y1,
   int distToHEntry, distToVEntry, distToHExit, distToVExit, xDelta, yDelta;
   int dyAbs, xMax, yMax;
 
-  /* avoid overflow on extremely long lines by simply not drawing them */
-  if (dx >= 0xffff || dy >= 0xffff)
-      return;
-
   /* make sure x is positive */
   if (dx < 0) {
     /* swap points */ 
@@ -433,6 +429,11 @@ void vfdlib_drawLineClipped(char *buffer, int x0, int y0, int x1, int y1,
     distToVExit = y0 - g_clipYTop;
     dyAbs = -dy;
   }
+
+  /* avoid overflow on extremely long lines by simply not drawing them */
+  if (dx >= 0xfff0 || dyAbs >= 0xfff0)
+      return;
+
   if (distToVExit < 0) return;
   distToHExit = g_clipXRight - x0 - 1;
   if (distToHExit < 0) return;

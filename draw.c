@@ -5,6 +5,7 @@
  */
 
 #include <stdio.h>
+#include <unistd.h>
 #include <math.h>
 #include "vfdlib.h"
 #include "empeg_ui.h"
@@ -154,7 +155,8 @@ void _draw_mark(const int x, const int y, const int dir, const int shade)
     idx = ((dir << 2) + 45) / 90;
     idx++; /* first entry is for 'unknown direction' */
 
-    if (dir == -1) idx = 0;
+    if (dir < 0 || dir >= 360)
+	idx = 0;
 
     dx = cursors[idx][2];
     dy = cursors[idx][4];
@@ -182,10 +184,11 @@ void draw_msg(const char *msg)
 
 void draw_scale(void)
 {
+    char buf[10];
     vfdlib_drawLineHorizUnclipped(screen, 0, 0, 3, VFDSHADE_DIM);
     vfdlib_drawLineHorizUnclipped(screen, 7, 0, 3, VFDSHADE_DIM);
     vfdlib_drawLineVertUnclipped(screen, 1, 1, 6, VFDSHADE_DIM);
-    vfdlib_drawText(screen, formatdist(8 << map_scale), 3, 1, 0, VFDSHADE_DIM);
+    vfdlib_drawText(screen, formatdist(buf, 8 << map_scale), 3, 1, 0, VFDSHADE_DIM);
 }
 
 void draw_gpscoords(void)
@@ -201,7 +204,7 @@ void draw_gpscoords(void)
 
 void draw_info(void)
 {
-    char *p, *desc;
+    char *desc, buf[10];
     unsigned int dist;
     int center_x, center_y, tip_x, tip_y, b;
     struct xy pos;
@@ -211,9 +214,9 @@ void draw_info(void)
 				 VFDSHADE_DIM);
 
     if (route_getwp(-1, NULL, &dist, NULL)) {
-	if (show_time) p = time_estimate(dist);
-	else           p = formatdist(dist);
-	vfdlib_drawText(screen, p, VFD_WIDTH - vfdlib_getTextWidth(p, 0)+1,
+	if (show_time) time_estimate(buf, dist);
+	else           formatdist(buf, dist);
+	vfdlib_drawText(screen, buf, VFD_WIDTH - vfdlib_getTextWidth(buf, 0)+1,
 			0, 0, -1);
     }
 
@@ -222,19 +225,17 @@ void draw_info(void)
 	return;
     }
 
-    if (show_time) 
-	p = time_estimate(dist);
-    else
-	p = formatdist(dist);
-    vfdlib_drawText(screen, p, VFD_WIDTH - vfdlib_getTextWidth(p, 0)+1,
+    if (show_time) time_estimate(buf, dist);
+    else	   formatdist(buf, dist);
+    vfdlib_drawText(screen, buf, VFD_WIDTH - vfdlib_getTextWidth(buf, 0)+1,
 		    VFD_HEIGHT + 1 - h0, 0, -1);
 
     draw_popup(show_popups && dist < 1000 ? desc : NULL);
 
     /* draw pointer */
-    if (gps_bearing != -1) {
-	b = bearing(&gps_coord.xy, &pos) - gps_bearing;
-	if (b < 0) b += 360;
+    if (gps_state.bearing != -1) {
+	b = radtodeg(bearing(&gps_coord.xy, &pos)) - gps_state.bearing;
+	while (b < 0) b += 360;
 	center_x = VFD_WIDTH - VFD_HEIGHT / 2;
 	center_y = VFD_HEIGHT / 2;
 	b2 = degtorad(b);
@@ -252,7 +253,7 @@ void draw_wpstext(void)
     static int hoff, voff, lost, dir = 1;
     int i, n = 4, check = 0, offset = 0;
     char *desc;
-#define SHIFT 23
+#define SHIFT 27
 
     if (topwp < nextwp) { // scroll towards next entry
 	voff++;
@@ -309,16 +310,15 @@ void draw_wpstext(void)
     for (i = 0; i < n; i++) {
 	unsigned int dist, last_dist = 0;
 	int vert;
-	char *p;
+	char buf[10];
 
 	if (!route_getwp(topwp + i, NULL, &dist, &desc))
 	    break;
 
 	vert = i * (h0 + 1) + 3 - voff;
 
-	if (show_time) {
-	    p = time_estimate(dist);
-	} else {
+	if (show_time) time_estimate(buf, dist);
+	else {
 	    /* Do we want to use absolute or relative wp-distances? */
 	    if (!show_abs) {
 		if (i > 1 || (i == 1 && !voff)) {
@@ -326,10 +326,10 @@ void draw_wpstext(void)
 		    route_getwp(topwp + i - 1, NULL, &last_dist, NULL);
 		}
 	    }
-	    p = formatdist(abs(dist - last_dist));
+	    formatdist(buf, abs(dist - last_dist));
 	}
-	vfdlib_drawText(screen, p, SHIFT - 1 - vfdlib_getTextWidth(p, 0), vert,
-			0, -1);
+	vfdlib_drawText(screen, buf, SHIFT - 1 - vfdlib_getTextWidth(buf, 0),
+			vert, 0, -1);
 
 	vfdlib_setClipArea(SHIFT, 0, VFD_WIDTH, VFD_HEIGHT);
 	vfdlib_drawText(screen, desc, SHIFT - offset, vert, 0, -1);
@@ -359,6 +359,7 @@ void draw_popup(char *text)
 	hoff = 0;
 	voff = 1;
 	dir = 2;
+	do_refresh = 1;
     }
     else if (current == text && voff < h0) { // scroll-in
 	voff++;
@@ -386,3 +387,12 @@ void draw_display(void)
 {
     empeg_updatedisplay(screen);
 }
+
+void err(char *msg)
+{
+    draw_msg(msg);
+    draw_display();
+    sleep(2);
+    draw_clear();
+}
+

@@ -183,6 +183,37 @@ void route_init(void)
     /* recenter around current GPS position? */
 }
 
+static void route_update_gps_speed(void)
+{
+    double vmg_east, vmg_north, b;
+    int vmg = 0;
+    
+#if 1
+    if (nextwp < route.nwps) {
+	int idx = route.wps[nextwp].idx;
+#else
+    if (minidx < route.npts) {
+	int idx = minidx;
+#endif
+	/* calculate actual velocity towards the target wp */
+	b = bearing(&gps_coord.xy, &route.pts[idx]);
+
+	vmg_east = sin(b) * gps_state.spd_east;
+	vmg_north = cos(b) * gps_state.spd_north;
+
+	vmg = sqrt(vmg_east * vmg_east + vmg_north * vmg_north) * 3600.0;
+    }
+
+    gps_avgvmg += vmg - (gps_avgvmg >> AVGVMG_SHIFT);
+#ifndef __arm__
+    fprintf(stderr, "vmg %f\n", (gps_avgvmg >> AVGVMG_SHIFT) / 1609.344);
+#endif
+
+    /* we don't use actual gps_speed right now, so no need to do the math */
+    //gps_speed = sqrt(gps_spd_e * gps_speed_e + gps_speed_n * gps_speed_n +
+    //		       gps_spd_u * gps_speed_u);
+}
+
 void route_locate(void)
 {
     int minwp, idx;
@@ -210,7 +241,7 @@ void route_locate(void)
      * one. Otherwise check all points towards the next wp */
     idx = minidx;
     incr = 1;
-    if (towards(&gps_coord.xy, &route.pts[minidx], gps_bearing))
+    if (towards(&gps_coord.xy, &route.pts[minidx], gps_state.bearing))
 	 incr = -1;
 
     while(1) {
@@ -232,8 +263,8 @@ void route_locate(void)
     /* ok we're really close now */
     /* did we pass the point we just found? */
     if (minidx+1 < route.npts-1) {
-	if (!towards(&gps_coord.xy, &route.pts[minidx], gps_bearing) &&
-	    towards(&gps_coord.xy, &route.pts[minidx+1], gps_bearing)) {
+	if (!towards(&gps_coord.xy, &route.pts[minidx], gps_state.bearing) &&
+	    towards(&gps_coord.xy, &route.pts[minidx+1], gps_state.bearing)) {
 	    minidx++;
 	    mindist = distance2(&gps_coord.xy, &route.pts[minidx]);
 	}
@@ -245,6 +276,8 @@ void route_locate(void)
     /* got it! */
     total_dist = sqrt((double)mindist) + route.dists[minidx];
     nextwp = minwp;
+
+    route_update_gps_speed();
 }
 
 void route_draw(struct xy *cur_pos)

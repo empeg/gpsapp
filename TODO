@@ -1,6 +1,12 @@
 * The current method for figuring where we are in a route often
   incorrectly picks the wrong waypoint.
 
+* Averaging the speed doesn't make the estimated time much better. It
+  looks like the garmin etrex is using something called velocity made
+  good. I guess it is the actual speed towards the target. Right now we
+  have a positive speed even when we're driving at 100mph away from our
+  destination.
+
 * Display current speed/averaged speed/magnetic north/GPS time.
   Probably not really enough room on the display for too much more
   information.
@@ -22,9 +28,11 @@
 * Tiger/Line dataset to street level map conversion.
 
 * Other than NMEA gps interfacing code (Earthmate/Tripmate/Trimble/Oncore/
-  Garmin/Magellan/gpsd?).
+  Garmin/Magellan/Lowrance/gpsd?).
 
 * Can we derive the local timezone offset from the GPS data in some way?
+  Currently we need a good /etc/localtime to get the estimated time of
+  arrival right.
 
 * Actually try to do on-the-fly routing based on the Tiger/Line mapdata.
   Although they don't contain one-way street information, however if we

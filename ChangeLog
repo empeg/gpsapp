@@ -1,3 +1,19 @@
+Changes in v0.4
+
+* Popup messages didn't automatically continue popping up if it weren't for
+  other events that triggered a screen refresh.
+* Changed speed calculation, now we're averaging the actual speed towards the
+  next point on the route and use a smaller averaging factor.
+* Was testing for overflow in vfdlib_drawLine in the wrong place, large
+  negative numbers would still slip through.
+* Removed static buffers in formatdist and time_estimate.
+* Changed serial handling a bit, we pass character instead of line at a time
+  to the protocol specific handler. This made it easier to add other protocols.
+* Added code to handle Garmin and Trimble TSIP/TAIP protocols, but only
+  Garmin has been tested. You can start gpsapp [nmea|garmin|tsip|taip] to
+  select any specific protocol.
+
+
 Changes in v0.3
 
 * There was a clipping problem in vfdlib_drawLine where it was writing bits
