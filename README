@@ -5,6 +5,7 @@ Requirements
 - Empeg / RioCar player ;)
 - Hijack kernel
 - Empeg preinit
+- Python to convert downloaded routes on the desktop.
 
 Installation
 
@@ -38,6 +39,14 @@ Installation
   route description' link at the bottom of the page. Save this
   description as HTML and run the python script 'parse_mapsonus.py' to
   convert it into a file named 'route'.
+
+  Routes are preprocessed on the desktop because we have to map from
+  geodetic coordinates in the NAD27 CONUS datum to a transverse mercator
+  projection in the WGS85 (gps) datum. Which involves a lot of floating
+  point operations that are dreadfully slow on the empeg. About 3 sec.
+  to project ~1200 points from geodetic to TM even if the datum
+  conversion was already done before. Without the projection we can draw
+  the same amount of data to the screen in a few milliseconds.
   
   Create a directory /programs0/routes on the empeg player and upload
   the route to any name you want.
@@ -68,6 +77,6 @@ Short operating instructions
     bottom button load selected route
 
 - Text mode
-    shows the next 4 waypoints in the loaded route.
+    shows the next 4 waypoints in the currently active route.
 
 

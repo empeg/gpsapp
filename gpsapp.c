@@ -22,6 +22,8 @@ int show_track      = 1;
 
 int show_scale      = 1;
 int show_popups     = 1;
+int show_abs	    = 0;
+int show_time	    = 0;
 
 /* height of font 0, used a lot, so looking it up once might be useful */
 int h0;
@@ -38,9 +40,11 @@ static char *menu_msg[] = {
     "Toggle Miles/Meters",
     "Toggle Coordinates",
     "Toggle Rubberband",
+    "Toggle Distance/Time",
+    "Toggle Absolute/Relative",
     "Toggle Track",
 };
-#define MENU_ENTRIES 6
+#define MENU_ENTRIES 8
 
 extern int stats_fromTM;
 extern int stats_toTM;
@@ -99,7 +103,7 @@ static void refresh_display(void)
 	draw_mark(&gps_coord.xy, gps_bearing, VFDSHADE_BRIGHT);
 
 	vfdlib_setClipArea(0, 0, VFD_WIDTH, VFD_HEIGHT);
-	draw_info(show_popups);
+	draw_info();
     } else
 	draw_wpstext();
 
@@ -159,7 +163,9 @@ static int handle_input(void)
 	    case 2: show_metric = 1 - show_metric; break;
 	    case 3: show_gpscoords = 1 - show_gpscoords;  break;
 	    case 4: show_rubberband = 1 - show_rubberband; break;
-	    case 5: show_track = 1 - show_track; break;
+	    case 5: show_time = 1 - show_time; break;
+	    case 6: show_abs = 1 - show_abs; break;
+	    case 7: show_track = 1 - show_track; break;
 	    }
 	    menu = 0;
 	} else

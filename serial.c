@@ -95,7 +95,7 @@ void serial_poll()
 	    line[idx++] = c;
 	    xor ^= c;
 
-	    /* just discard long lines */
+	    /* discard long lines */
 	    if (idx == sizeof(line)) {
 		idx = 0;
 		xor = '\0';

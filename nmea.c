@@ -7,21 +7,93 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 #include "gpsapp.h"
 
-static struct {
+struct gps_info {
     int		 timestamp;
+    int		 datestamp;
     int		 coord_set;
-    struct coord coord;
+    double	 lat;
+    double	 lon;
     int		 speed_set;
     double	 speed;
     int		 bearing_set;
-    int		 bearing;
+    double	 bearing;
     int		 fix;
-} gps_tmp;
+};
 
 struct coord gps_coord;
 int	     gps_bearing;
+int	     gps_speed;
+time_t       gps_time;
+
+static void new_measurement(const struct gps_info *tmp)
+{
+    static struct gps_info cur;
+    struct xy last_coord;
+
+    if (tmp->timestamp && tmp->timestamp != cur.timestamp) {
+	last_coord = gps_coord.xy;
+
+	if (cur.coord_set) {
+	    gps_coord.lat = degtorad(cur.lat);
+	    gps_coord.lon = degtorad(cur.lon);
+	    toTM(&gps_coord, &coord_center, &gps_coord.xy);
+
+	    track_pos();
+	    route_locate();
+
+	    do_refresh = 1;
+	}
+
+	if (!cur.fix)
+	    gps_bearing = -1;
+	else if (cur.bearing_set)
+	    gps_bearing = (int)cur.bearing;
+	else
+	    gps_bearing = bearing(&last_coord, &gps_coord.xy);
+
+	if (cur.speed_set)
+	    gps_speed = (int)(cur.speed * 1000);
+	else
+	    gps_speed = 0;
+
+	gps_time = cur.timestamp + cur.datestamp;
+
+	memset(&cur, 0, sizeof(cur));
+    }
+
+    if (tmp->timestamp)
+	cur.timestamp = tmp->timestamp;
+    if (tmp->datestamp)
+	cur.datestamp = tmp->datestamp;
+
+    if (tmp->coord_set == 2) {
+	cur.lat = tmp->lat;
+	cur.lon = tmp->lon;
+	cur.coord_set = 2;
+    }
+
+    if (tmp->fix)
+	cur.fix = 1;
+
+    if (tmp->bearing_set) {
+	cur.bearing = tmp->bearing;
+	cur.bearing_set = 1;
+    }
+
+    if (tmp->speed_set) {
+	cur.speed = tmp->speed;
+	cur.speed_set = 1;
+    }
+#if 0
+    printf("ts %d fix %d lat %.6f lon %.6f spd %.2f%s bear %.2f%s\n",
+	   cur.timestamp, cur.fix, cur.lat, cur.lon,
+	   cur.speed, cur.speed_set ? "" : "?",
+	   cur.bearing, cur.bearing_set ? "" : "?");
+#endif
+}
 
 static int hex(char c)
 {
@@ -32,149 +104,144 @@ static int hex(char c)
     return r;
 }
 
-static char *field(char *line, int pos)
+static int skip(char **p)
 {
-    int i;
-    char *p = &line[7];
-
-    for (i = 0; i < pos; i++, p++)
-	p = strchr(p, ',');
-    return p;
+    while (**p && **p != ',') (*p)++;
+    return 0;
 }
 
-static void nmea_time(char *f)
+static int nmea_time(char **p)
 {
-    int hour, min, sec, timestamp;
-    // time 23 59 59
+    int hour, min, sec, timestamp = 0;
 
-    if (*f == ',') return;
+    if (**p != ',')
+	return skip(p);
 
-    if (*f < '0' && *f > '2') return;
-    hour = (*(f++) - '0') * 10;
-    if (*f < '0' && *f > '9') return;
-    hour += *(f++) - '0';
-    if (hour > 23) return;
+    (*p)++;
+    sec = strtol(*p, p, 10);
+    if (**p != ',')
+	return skip(p);
 
-    if (*f < '0' && *f > '5') return;
-    min = (*(f++) - '0') * 10;
-    if (*f < '0' && *f > '9') return;
-    min += *(f++) - '0';
+    min  = sec / 100;
+    sec -= min * 100;
+    hour = min / 100;
+    min -= hour * 100;
 
-    if (*f < '0' && *f > '5') return;
-    sec = (*(f++) - '0') * 10;
-    if (*f < '0' && *f > '9') return;
-    sec += *(f++) - '0';
+    if (hour >= 0 && hour <= 23 && min >= 0 &&
+	min <= 59 && sec >= 0 && sec <= 59)
+	timestamp = (hour * 60 + min) * 60 + sec;
 
-    timestamp = ((hour * 60) + min) * 60 + sec;
-    if (timestamp != gps_tmp.timestamp) {
-	gps_bearing = -1;
-	if (gps_tmp.fix && gps_tmp.bearing_set)
-	    gps_bearing = gps_tmp.bearing;
+    return timestamp;
+}
 
-	if (gps_tmp.coord_set) {
-	    gps_coord.lat = degtorad(gps_tmp.coord.lat);
-	    gps_coord.lon = degtorad(gps_tmp.coord.lon);
-	    toTM(&gps_coord, &coord_center, &gps_coord.xy);
+static int nmea_date(char **p)
+{
+    int day, mon, year, datestamp = 0;
 
-	    track_pos();
-	    route_locate();
+    if (**p != ',')
+	return skip(p);
 
-	    do_refresh = 1;
-	}
+    (*p)++;
+    year = strtol(*p, p, 10);
+    if (**p != ',')
+	return skip(p);
 
-	memset(&gps_tmp, 0, sizeof(gps_tmp));
-	gps_tmp.timestamp = timestamp;
+    mon   = year / 100;
+    year -= mon * 100;
+    day   = mon / 100;
+    mon  -= day * 100;
+
+    year += 2000;
+    if (day >= 1 && day <= 31 && mon >= 1 &&
+	mon <= 12 && year >= 2000 && year <= 2099) {
+#define	GPSEPOCH 1980
+#define GPSLEAPS 479
+#define	EPOCHDIFF 315532800
+	int mds[] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
+	int days;
+	int isleap = !(year % 4) && ((year % 100) || !(year % 400));
+	
+	days = 365 * (year - GPSEPOCH) + /* years */
+	       year / 4 - year / 100 + year / 400 - GPSLEAPS + /* leap years */
+	       mds[mon-1] + /* months */
+	       day - 1;     /* days */
+	if (mon <= 2 && isleap) days--; /* start of a leap year? */
+
+	datestamp = days * 86400 + EPOCHDIFF;
     }
-    return;
+
+    return datestamp;
 }
 
-static void nmea_latitude(char *f)
+static int nmea_latlong(char **p, double *latlong, char pos, char neg)
 {
-    double dmm, min;
-    int deg;
-    char *p;
+    double min;
+    int deg, inv;
 
-    if (*f == ',') return;
-    dmm = strtod(f, &p);
-    if (*(p++) != ',') return;
-    if (*p != 'N' && *p != 'S') return;
+    if (**p != ',')
+	return skip(p);
 
-    deg = dmm / 100;
-    min = dmm - (deg * 100.0);
-    gps_tmp.coord.lat = deg + (min / 60.0);
+    (*p)++;
+    min = strtod(*p, p);
+    if (**p != ',')
+	return skip(p);
 
-    if (*p == 'S')
-	gps_tmp.coord.lat = -gps_tmp.coord.lat;
+    (*p)++;
+    inv = (**p == neg);
+    if (!inv && **p != pos)
+	return skip(p);
+    (*p)++;
+
+    if (**p != ',')
+	return skip(p);
+
+    deg = min / 100;
+    min -= deg * 100.0;
+    *latlong = deg + (min / 60.0);
+
+    if (inv)
+	*latlong = -*latlong;
+
+    return 1;
 }
 
-static void nmea_longtitude(char *f)
+static int nmea_fix(char **p)
 {
-    double dmm, min;
-    int deg;
-    char *p;
+    int fix;
+    
+    if (**p != ',')
+	return skip(p);
 
-    if (*f == ',') return;
-    dmm = strtod(f, &p);
-    if (*(p++) != ',') return;
-    if (*p != 'E' && *p != 'W') return;
+    (*p)++;
+    fix = (**p == 'A' || **p == '1' || **p == '2');
+    (*p)++;
+    if (**p != ',')
+	return skip(p);
 
-    deg = dmm / 100;
-    min = dmm - (deg * 100.0);
-    gps_tmp.coord.lon = deg + (min / 60.0);
-
-    if (*p == 'W')
-	gps_tmp.coord.lon = -gps_tmp.coord.lon;
-    gps_tmp.coord_set = 1;
+    return fix;
 }
 
-static void nmea_fix(char *f)
+static int nmea_float(char **p, double *val)
 {
-    if (*f == 'A' || *f == '1' || *f == '2')
-	gps_tmp.fix = 1;
-}
+    double tmp;
 
-static void nmea_speed(char *f)
-{
-    double speed;
-    char *p;
+    if (**p != ',')
+	return skip(p);
 
-    if (*f == ',') return;
-    speed = strtod(f, &p);
-    if (*p != ',') return;
+    (*p)++;
+    tmp = strtod(*p, p);
+    if (**p != ',')
+	return skip(p);
 
-    gps_tmp.speed = speed;
-    gps_tmp.speed_set = 1;
-}
-
-static void nmea_speed_knots(char *f)
-{
-    double speed;
-    char *p;
-
-    if (*f == ',') return;
-    speed = strtod(f, &p);
-    if (*p != ',') return;
-
-    gps_tmp.speed = speed / 539.9568e-3;
-    gps_tmp.speed_set = 1;
-}
-
-static void nmea_bearing(char *f)
-{
-    double bearing;
-    char *p;
-
-    if (*f == ',') return;
-    bearing = strtod(f, &p);
-    if (*p != ',') return;
-
-    gps_tmp.bearing = bearing;
-    gps_tmp.bearing_set = 1;
+    *val = tmp;
+    return 1;
 }
 
 void nmea_decode(char *line, char xor)
 {
     int n, csum;
+    struct gps_info tmp;
+    char *p;
 
     /* NMEA lines should start with a '$' */
     if (line[0] != '$') return;
@@ -183,32 +250,46 @@ void nmea_decode(char *line, char xor)
     n = strlen(line);
     if (n < 9 || line[n-3] != '*') return;
 
-    /* fix up the xor and check the checksum */
+    /* fix up the xor and check the trailing checksum */
     xor ^= '$' ^ '*' ^ line[n-2] ^ line[n-1];
     csum = hex(line[n-2]) << 4 | hex(line[n-1]);
     if (xor != csum) return;
 
+#ifndef __arm__
+    fprintf(stderr, "%s\n", line);
+#endif
+
+    p = &line[6];
+    memset(&tmp, 0, sizeof(tmp));
+
     if (memcmp(&line[1], "GPGGA", 5) == 0) {
-	nmea_time(field(line, 0));
-	nmea_latitude(field(line, 1));
-	nmea_longtitude(field(line, 3));
-	nmea_fix(field(line, 5));
+	tmp.timestamp      = nmea_time(&p);
+	tmp.coord_set      = nmea_latlong(&p, &tmp.lat, 'N', 'S');
+	tmp.coord_set     += nmea_latlong(&p, &tmp.lon, 'E', 'W');
+	tmp.fix            = nmea_fix(&p);
     } else if (memcmp(&line[1], "GPGLL", 5) == 0) {
-	nmea_time(field(line, 4));
-	nmea_latitude(field(line, 0));
-	nmea_longtitude(field(line, 2));
-	nmea_fix(field(line, 5));
+	tmp.coord_set      = nmea_latlong(&p, &tmp.lat, 'N', 'S');
+	tmp.coord_set     += nmea_latlong(&p, &tmp.lon, 'E', 'W');
+	tmp.timestamp      = nmea_time(&p);
+	tmp.fix            = nmea_fix(&p);
     } else if (memcmp(&line[1], "GPRMC", 5) == 0) {
-	nmea_time(field(line, 0));
-	nmea_fix(field(line, 1));
-	nmea_latitude(field(line, 2));
-	nmea_longtitude(field(line, 4));
-	nmea_bearing(field(line, 7));
-	if (!gps_tmp.speed_set)
-	    nmea_speed_knots(field(line, 6));
+	tmp.timestamp      = nmea_time(&p);
+	tmp.fix            = nmea_fix(&p);
+	tmp.coord_set      = nmea_latlong(&p, &tmp.lat, 'N', 'S');
+	tmp.coord_set     += nmea_latlong(&p, &tmp.lon, 'E', 'W');
+	if (tmp.speed_set) skip(&p);
+	else {
+	    tmp.speed_set  = nmea_float(&p, &tmp.speed);
+	    tmp.speed = tmp.speed / 539.9568e-3;
+	}
+	tmp.bearing_set    = nmea_float(&p, &tmp.bearing);
+	tmp.datestamp	   = nmea_date(&p);
     } else if (memcmp(&line[1], "GPVTG", 5) == 0) {
-	nmea_bearing(field(line, 0));
-	nmea_speed(field(line, 3));
+	tmp.bearing_set    = nmea_float(&p, &tmp.bearing);
+	skip(&p);
+	skip(&p);
+	tmp.speed_set      = nmea_float(&p, &tmp.speed);
     }
+    new_measurement(&tmp);
 }
 

@@ -5,12 +5,9 @@
  */
 
 #include <stdio.h>
+#include <time.h>
 #include <math.h>
 #include "gpsapp.h"
-
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
 
 #define WGS84_a    6378137.0
 #define WGS84_invf 298.257223563
@@ -63,6 +60,37 @@ char *formatdist(const unsigned int dist)
 		sprintf(buf, "%umi", decimiles / 10);
 	}
     }
+    return buf;
+}
+
+char *time_estimate(const unsigned int dist)
+{
+    static char buf[10];
+    int hour, min, sec = 0;
+
+    if (dist && gps_speed)
+	sec = ((dist * 3600) / gps_speed);
+
+    if (!dist || gps_speed) {
+	if (show_abs) {
+	    struct tm *tm;
+	    time_t s = sec + gps_time;
+	    tm = localtime(&s);
+
+	    hour = tm->tm_hour;
+	    min  = tm->tm_min;
+	    sec  = tm->tm_sec;
+	} else {
+	    min = sec / 60;
+	    sec -= min * 60;
+	    hour = min / 60;
+	    min -= hour * 60;
+	}
+	if (hour) sprintf(buf, "%02d:%02d", hour, min);
+	else      sprintf(buf, "%02dm%02d", min, sec);
+    } else
+	sprintf(buf, "--?--");
+
     return buf;
 }
 

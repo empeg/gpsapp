@@ -14,6 +14,9 @@ extern int show_scale;
 extern int show_gpscoords;
 extern int show_rubberband;
 extern int show_metric;
+extern int show_popups;
+extern int show_abs;
+extern int show_time;
 
 /* screen coordinates */
 struct xy { int x, y; };
@@ -44,6 +47,7 @@ double degtorad(const double deg);
 double intdegtorad(const int deg);
 double radtodeg(const double rad);
 char *formatdist(const unsigned int distance);
+char *time_estimate(const unsigned int distance);
 
 void toTM(const struct coord *point, const struct coord *center, struct xy *xy);
 long long distance2(const struct xy *coord1, const struct xy *coord2);
@@ -59,7 +63,7 @@ void draw_lines(const struct xy *pts, const int npts, const int shade);
 void draw_msg(const char *msg);
 void _draw_mark(const int x, const int y, const int dir, const int shade);
 void draw_mark(const struct xy *pnt, const int dir, const int shade);
-void draw_info(const int show_popups);
+void draw_info(void);
 void draw_scale(void);
 void draw_gpscoords(void);
 void draw_wpstext(void);
@@ -90,6 +94,8 @@ void serial_poll(void);
 /* nmea decoding (nmea.c) */
 extern struct coord gps_coord;
 extern int	    gps_bearing;
+extern int	    gps_speed;
+extern time_t       gps_time;
 void nmea_decode(char *line, char xor);
 
 #endif

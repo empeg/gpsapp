@@ -199,7 +199,7 @@ void draw_gpscoords(void)
 		    h0, 0, VFDSHADE_DIM);
 }
 
-void draw_info(int show_popups)
+void draw_info(void)
 {
     char *p, *desc;
     unsigned int dist;
@@ -211,7 +211,8 @@ void draw_info(int show_popups)
 				 VFDSHADE_DIM);
 
     if (route_getwp(-1, NULL, &dist, NULL)) {
-	p = formatdist(dist);
+	if (show_time) p = time_estimate(dist);
+	else           p = formatdist(dist);
 	vfdlib_drawText(screen, p, VFD_WIDTH - vfdlib_getTextWidth(p, 0)+1,
 			0, 0, -1);
     }
@@ -221,7 +222,10 @@ void draw_info(int show_popups)
 	return;
     }
 
-    p = formatdist(dist);
+    if (show_time) 
+	p = time_estimate(dist);
+    else
+	p = formatdist(dist);
     vfdlib_drawText(screen, p, VFD_WIDTH - vfdlib_getTextWidth(p, 0)+1,
 		    VFD_HEIGHT + 1 - h0, 0, -1);
 
@@ -248,6 +252,7 @@ void draw_wpstext(void)
     static int hoff, voff, lost, dir = 1;
     int i, n = 4, check = 0, offset = 0;
     char *desc;
+#define SHIFT 23
 
     if (topwp < nextwp) { // scroll towards next entry
 	voff++;
@@ -276,7 +281,7 @@ void draw_wpstext(void)
 	lost = 0;
 	i = 0;
 
-	/* scroll when only first, or when any entry is too large */
+	/* scroll when only first, or when any entry, is too large */
 	//for (; i < n; i++)
 	for (; i < 1; i++)
 	{
@@ -284,7 +289,7 @@ void draw_wpstext(void)
 	    if (!route_getwp(topwp + i, NULL, NULL, &desc))
 		break;
 
-	    tmp = vfdlib_getTextWidth(desc, 0) + 23 - VFD_WIDTH;
+	    tmp = SHIFT + vfdlib_getTextWidth(desc, 0) - VFD_WIDTH;
 
 	    if (tmp <= lost)
 		continue;
@@ -309,20 +314,26 @@ void draw_wpstext(void)
 	if (!route_getwp(topwp + i, NULL, &dist, &desc))
 	    break;
 
-	/* Do we want to use 'absolute or relative' wp-distances */
-	if (i > 1 || (i == 1 && !voff))
-	    route_getwp(topwp + i - 1, NULL, &last_dist, NULL);
-	p = formatdist(abs(dist - last_dist));
-
 	vert = i * (h0 + 1) + 3 - voff;
-	vfdlib_drawText(screen, p, 22 - vfdlib_getTextWidth(p, 0),
-			vert, 0, -1);
 
-	vfdlib_setClipArea(23, 0, VFD_WIDTH, VFD_HEIGHT);
-	vfdlib_drawText(screen, desc, 23 - offset, vert, 0, -1);
+	if (show_time) {
+	    p = time_estimate(dist);
+	} else {
+	    /* Do we want to use absolute or relative wp-distances? */
+	    if (!show_abs) {
+		if (i > 1 || (i == 1 && !voff)) {
+		    vfdlib_drawText(screen, "+", 0, vert, 0, -1);
+		    route_getwp(topwp + i - 1, NULL, &last_dist, NULL);
+		}
+	    }
+	    p = formatdist(abs(dist - last_dist));
+	}
+	vfdlib_drawText(screen, p, SHIFT - 1 - vfdlib_getTextWidth(p, 0), vert,
+			0, -1);
+
+	vfdlib_setClipArea(SHIFT, 0, VFD_WIDTH, VFD_HEIGHT);
+	vfdlib_drawText(screen, desc, SHIFT - offset, vert, 0, -1);
 	vfdlib_setClipArea(0, 0, VFD_WIDTH, VFD_HEIGHT);
-
-	last_dist = dist;
     }
     if (i == 0)
 	draw_msg("No route loaded");
