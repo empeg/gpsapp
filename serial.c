@@ -1,17 +1,32 @@
-#include <sys/types.h>
-#include <sys/stat.h>
+/*
+ * Copyright (c) 2002 Jan Harkes <jaharkes(at)cs.cmu.edu>
+ * This code is distributed "AS IS" without warranty of any kind under the
+ * terms of the GNU General Public License Version 2.
+ */
+
+#include <sys/ioctl.h>
 #include <fcntl.h>
 #include <termios.h>
 #include <unistd.h>
+#include "gpsapp.h"
 
 static int serialfd = -1;
 
+#ifdef __arm__
+#define SERIALDEV "/dev/ttyS1"
+#else
+#define SERIALDEV "/dev/ttyUSB0"
+#endif
+
 void serial_open(void)
 {
-    int serialfd, ret = -1;
+    int ret = -1;
     struct termios termios;
 
-    serialfd = open("/dev/ttyS0", O_RDWR);
+    if (serialfd != -1)
+	serial_close();
+
+    serialfd = open(SERIALDEV, O_RDONLY | O_NONBLOCK);
     if (serialfd == -1) goto exit;
 
     ret = tcgetattr(serialfd, &termios);
@@ -29,33 +44,63 @@ void serial_open(void)
 
 exit:
     if (ret == -1) {
-	err("Failed to set up serial port");
 	if (serialfd != -1) {
 	    close(serialfd);
 	    serialfd = -1;
 	}
+	//err("Failed to set up serial port");
     }
-
-    return ret;
+    return;
 }
 
 void serial_close(void)
 {
-    if (serialfd != -1) {
-	close(serialfd);
-	serialfd = -1;
-    }
+    if (serialfd == -1)
+	return;
+
+    close(serialfd);
+    serialfd = -1;
 }
 
-int serial_avail(void)
+void serial_poll()
 {
-    int avail = 0, ret;
+    static char line[128], xor;
+    static int idx;
+    int n, i;
+    char c, buf[16];
 
-    if (serialfd != -1) {
-	ret = ioctl(serialfd, FIONREAD, &avail);
-	if (ret == -1)
-	    avail = 0;
+    if (serialfd == -1)
+	return;
+
+    while (1) {
+	n = read(serialfd, buf, sizeof(buf));
+	if (n <= 0) break;
+
+	for (i = 0; i < n; i++) {
+	    c = buf[i]; 
+
+	    if (c == '\r')
+		continue;
+
+	    if (c == '\n') {
+		line[idx] = '\0';
+
+		nmea_decode(line, xor);
+
+		idx = 0;
+		xor = '\0';
+		continue;
+	    }
+
+	    line[idx++] = c;
+	    xor ^= c;
+
+	    /* just discard long lines */
+	    if (idx == sizeof(line)) {
+		idx = 0;
+		xor = '\0';
+	    }
+	}
     }
-    return avail;
 }
 

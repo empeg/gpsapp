@@ -1,0 +1,73 @@
+GPS application for the Empeg/RioCar player.
+
+Requirements
+
+- Empeg / RioCar player ;)
+- Hijack kernel
+- Empeg preinit
+
+Installation
+
+- This program looks for routes in /programs0/routes so you should have
+  /dev/hda2 mounted as /programs0. In-depth instructions can be found on
+  the wonderful "Unofficial Empeg/RioCar BBS" (http://empeg.comms.net/).
+
+- Upload "gpsapp" and "hack_init" to /programs0 and make sure they are
+  executable (chmod 755).
+
+- We need to keep the player application off of the serial port. This
+  involves running the player with the -s- option, which can as far as I
+  can see only be done by binary editing /bin/init.
+
+  For this, I wrote the small app 'hack_init', which first copies itself
+  to /empeg/bin/play-s, and then modifies /bin/init to call this new binary.
+  When hack_init is called as /empeg/bin/play-s it will check whether we
+  are in DC (Car) mode, and adds the '-s-' flag to the player's commandline.
+
+  So you only need to do 'rw ; hack_init ; ro' once and you're set.
+
+- Put 'M50gpsapp' in /etc/preinit.d, so that gpsapp is started when the
+  player is booted.
+
+- At this point, gpsapp has basic functionality, i.e. it can run and
+  'track' movement from a GPS attached to the serial port.
+
+- Driving instructions are converted from the raw route descriptions
+  from http://mapsonus.switchboard.com. If you select 'show lat/long'
+  in the general options section, all planned routes will have a 'raw
+  route description' link at the bottom of the page. Save this
+  description as HTML and run the python script 'parse_mapsonus.py' to
+  convert it into a file named 'route'.
+  
+  Create a directory /programs0/routes on the empeg player and upload
+  the route to any name you want.
+
+Short operating instructions
+
+- Select the entry "GPS" in the hijack menu.
+- gpsapp will wait until it either receives a location from the gps
+  attached to the serial port, or a key is pressed.
+
+- Default screen is a map of route around the current location.
+    top button    exit the application
+    left button   zoom out
+    right button  zoom in
+    bottom button (long-press)  switch to a text mode
+		  (short-press) enter menu
+
+- Menu
+    top button    exit the menu
+    left button   previous menu entry
+    right button  next menu entry
+    bottom button select menu entry
+
+- Load Route (selected from the menu)
+    top button    exit the menu
+    left button   previous route in /programs0/routes
+    right button  next route in /programs0/routes
+    bottom button load selected route
+
+- Text mode
+    shows the next 4 waypoints in the loaded route.
+
+

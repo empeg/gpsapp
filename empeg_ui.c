@@ -1,8 +1,13 @@
+/*
+ * Copyright (c) 2002 Jan Harkes <jaharkes(at)cs.cmu.edu>
+ * This code is distributed "AS IS" without warranty of any kind under the
+ * terms of the GNU General Public License Version 2.
+ */
+
 #include <unistd.h>
 #include <stdio.h>
 #include <errno.h>
-#include "gpsapp.h"
-#include "hijack.h"
+#include "empeg_ui.h"
 
 #ifdef __arm__ /* assume we're cross-compiled for an empeg */
 
@@ -13,7 +18,7 @@
 
 static int hijack_fd = -1;
 
-int hijack_init(void)
+int empeg_init(void)
 {
     /* move away from partitions that might need to be remounted during sync */
     chdir("/");
@@ -29,7 +34,7 @@ int hijack_init(void)
     return 0;
 }
 
-int hijack_waitmenu(void)
+int empeg_waitmenu(void)
 {
     const unsigned long buttons[] = { 8,
 	/* front panel buttons (8) */
@@ -62,7 +67,7 @@ int hijack_waitmenu(void)
     return 0;
 }
 
-void hijack_exit(void)
+void empeg_free(void)
 {
     if (hijack_fd == -1)
 	return;
@@ -72,7 +77,7 @@ void hijack_exit(void)
     hijack_fd = -1;
 }
 
-int hijack_getkey(unsigned long *key)
+int empeg_getkey(unsigned long *key)
 {
     int rc;
 
@@ -87,7 +92,7 @@ int hijack_getkey(unsigned long *key)
     return (rc != -1);
 }
 
-void hijack_updatedisplay(const unsigned char *screen)
+void empeg_updatedisplay(const unsigned char *screen)
 {
     if (hijack_fd == -1)
 	return;
@@ -110,7 +115,7 @@ static GC       gc;
 #define X_WIDTH  (EMPEG_SCREEN_COLS * XSCALE)
 #define X_HEIGHT (EMPEG_SCREEN_ROWS * XSCALE)
 
-int hijack_init(void)
+int empeg_init(void)
 {
     display = XOpenDisplay(NULL);
     if (!display) {
@@ -136,17 +141,17 @@ int hijack_init(void)
     return 0;
 }
 
-int hijack_waitmenu(void)
-{
-    return 0;
-}
-
-void hijack_exit(void)
+void empeg_free(void)
 {
     XCloseDisplay(display);
 }
 
-int hijack_getkey(unsigned long *key)
+int empeg_waitmenu(void)
+{
+    return 0;
+}
+
+int empeg_getkey(unsigned long *key)
 {
     *key = -1;
 
@@ -196,7 +201,7 @@ int hijack_getkey(unsigned long *key)
     return 1;
 }
 
-void hijack_updatedisplay(const unsigned char *screen)
+void empeg_updatedisplay(const unsigned char *screen)
 {
     const unsigned int colors[4] =
 	//{ 0x00000000, 0x00210000, 0x00300000, 0x00ff0000 };

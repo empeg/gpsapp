@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2002 Jan Harkes <jaharkes(at)cs.cmu.edu>
+ * This code is distributed "AS IS" without warranty of any kind under the
+ * terms of the GNU General Public License Version 2.
+ */
+
 #include <stdio.h>
 #include <math.h>
 #include "gpsapp.h"
@@ -141,7 +147,10 @@ int bearing(const struct xy *coord1, const struct xy *coord2)
 
 int towards(const struct xy *here, const struct xy *coord, const int dir)
 {
-    int b = bearing(here, coord) - dir;
+    int b;
+    
+    if (dir == -1) return 1;
+    b = bearing(here, coord) - dir;
     if (b < 0) b += 360;
     return (b <= 90 || b >= 270);
 }
