@@ -19,23 +19,25 @@
 static unsigned char screen[VFD_HEIGHT * VFD_BYTES_PER_SCANLINE];
 static int map_scale = 5;
 
-void draw_activity(int redraw)
+void draw_activity(int refresh)
 {
     static int lastshade = 1;
     
     if (get_visual() == 2)
         return;
 
-    vfdlib_drawSolidRectangleClipped(screen, VFD_WIDTH-4, 2, VFD_WIDTH-2, 4, 
+    vfdlib_drawSolidRectangleClipped(screen, 2, 2, 4, 4, 
                                      (lastshade < 4) ? lastshade : 
                                      (6 - lastshade));
-    empeg_updatedisplay(screen);
 
-    if (!redraw) {
-      lastshade++;
-      if (lastshade > 5)
-          lastshade = 1;
-    }
+    /* if we're called from the main screen refresh, we should not update the
+     * counter or don't redraw the display here */
+    if (refresh)
+	return;
+
+    if (++lastshade > 5)
+	lastshade = 1;
+    empeg_updatedisplay(screen);
 }
 
 void draw_clear(void)

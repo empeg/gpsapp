@@ -72,8 +72,8 @@ static int gpsd_open(void)
 	close(fd);
 	return -1;
     }
+
     /* bring the interface up */
-    strcpy(ifr.ifr_name, "lo");
     ifr.ifr_flags = (IFF_UP | IFF_RUNNING);
     if (ioctl(fd, SIOCSIFFLAGS, &ifr) < 0) {
 	close(fd);

@@ -43,7 +43,7 @@ static double Double(char *p)
 
 static void tsip_send(char *buf, unsigned char len)
 {
-    char cmd[16];
+    char cmd[40];
     int i, j = 0;
 
 #ifndef __arm__
@@ -87,8 +87,8 @@ static void tsip_27_req_signal_levels(void)
 
 static void tsip_2C_set_operating_parameters()
 {
-    char d[18];
     union { char c[4]; float v; } em, sm, dm, ds;
+    char d[18];
 
     em.v = 0.0873; /* elevation mask: 5 degrees */
     sm.v = 2.0;	   /* signal strength mask */
@@ -97,8 +97,8 @@ static void tsip_2C_set_operating_parameters()
 
     d[0] = '\x2c';
     d[1] = 1; /* land dynamics */
-    d[2] = em.c[3];  d[3] = em.c[2];  d[4] = em.c[1];  d[5] = em.c[0];
-    d[6] = sm.c[3];  d[7] = sm.c[2];  d[8] = sm.c[1];  d[9] = sm.c[0];
+    d[2]  = em.c[3]; d[3]  = em.c[2]; d[4]  = em.c[1]; d[5]  = em.c[0];
+    d[6]  = sm.c[3]; d[7]  = sm.c[2]; d[8]  = sm.c[1]; d[9]  = sm.c[0];
     d[10] = dm.c[3]; d[11] = dm.c[2]; d[12] = dm.c[1]; d[13] = dm.c[0];
     d[14] = ds.c[3]; d[15] = ds.c[2]; d[16] = ds.c[1]; d[17] = ds.c[0];
     tsip_send(d, 18);

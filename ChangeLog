@@ -9,13 +9,16 @@ Changes in v0.17
    gpsapp to avoid a lockup when we're trying to connect to gpsd when the
    loopback network is not available.
  * Sending more initialization sequences to trimble gps when using TSIP.
+ * More messing around with the code that tries to track the next waypoint.
+ * Added 10 second delay after a user has selected a wp by turning the knob
+   before we restart the automated tracking.
 
  And a whole set of patches from Derrick,
  * mini_ifconfig, and send the trigger to gpsd to forward raw NMEA data.
  * We needed unsigned int distances, the world doesn't want to fit in a
    signed int.
- * Activity led, don't know what it looks like, but it should change whenever
-   packets get decoded successfully. Probably looks nifty :)
+ * Activity led triggered by received packets from the serial port, looks
+   nifty :)
 
 Changes in v0.16
 

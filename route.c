@@ -13,12 +13,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include "gpsapp.h"
 #include "vfdlib.h"
 
 /* coord_center is needed to project GPS coords into map coords */ 
 struct coord coord_center;
 int nextwp;
+time_t user_twiddle;
 
 /* saved state variables after a successful locate */
 static struct route route;
@@ -257,6 +259,7 @@ void route_update_vmg(void)
 
 void route_skipwp(int dir)
 {
+    user_twiddle = time(NULL);
     nextwp += dir;
 
     if (nextwp >= route.nwps)
@@ -275,21 +278,24 @@ void route_locate(void)
 
     if (!route.nwps) return;
 
+    /* don't restart routing until about 10 seconds after the user has stopped
+     * twiddling the knob to change the currently selected waypoint */
+    if (user_twiddle && time(NULL) < user_twiddle + 10)
+	return;
+
     /* don't try to be smart, just search based on the current nextwp */
-    if (minidx >= route.npts)
-	minidx = 0;
+    if (nextwp >= route.nwps)
+	nextwp = 0;
+
+    minidx = (nextwp > 1) ? route.wps[nextwp-1].idx : 0;
     mindist = distance2(&gps_coord.xy, &route.pts[minidx]);
 
-    for (idx = minidx; idx < route.npts; idx++) {
-	if (nextwp < route.nwps-1 && idx > route.wps[nextwp].idx)
-	    break;
-
+    for (idx = minidx+1; idx <= route.wps[nextwp].idx; idx++) {
 	dist = distance2(&gps_coord.xy, &route.pts[idx]);
-	if (dist > mindist)
-	    continue;
-
-	minidx = idx;
-	mindist = dist;
+	if (dist < mindist) {
+	    minidx = idx;
+	    mindist = dist;
+	}
     }
 
     /* ok we're really close now,
