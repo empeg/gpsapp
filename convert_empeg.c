@@ -18,7 +18,7 @@ int stats_distance;
 int stats_bearing;
 
 /* buf needs to be at least 10 characters */
-char *formatdist(char *buf, const unsigned int dist, const int alt)
+char *formatdist(char *buf, const int dist, const int alt)
 {
 #define meters_per_mile 1609.344
 #define meters_per_foot 0.3048
@@ -26,7 +26,7 @@ char *formatdist(char *buf, const unsigned int dist, const int alt)
 	if (dist < 1000 || alt)
 	    sprintf(buf, "%um ", dist);
 	else {
-	    unsigned int decameters = dist / 10;
+	    int decameters = dist / 10;
 	    if (decameters < 1000)
 		sprintf(buf, "%u.%02ukm", decameters / 100,
 			decameters % 100);
@@ -40,7 +40,7 @@ char *formatdist(char *buf, const unsigned int dist, const int alt)
 	if (dist < 161 || alt) // ~ 0.1 mile, 305 would be ~1000 feet
 	    sprintf(buf, "%uft", (dist * 10000) / 3048);
 	else {
-	    unsigned int centimiles = (dist * 1000) / 16093; // .44
+	    int centimiles = (dist * 1000) / 16093; // .44
 	    if (centimiles < 1000)
 		sprintf(buf, "%u.%02umi", centimiles / 100, centimiles % 100);
 	    else if (centimiles < 10000)
@@ -53,7 +53,7 @@ char *formatdist(char *buf, const unsigned int dist, const int alt)
 }
 
 /* buf needs to be at least 10 characters */
-char *time_estimate(char *buf, const unsigned int dist)
+char *time_estimate(char *buf, const int dist)
 {
     int hour, min;
     time_t sec;
@@ -80,6 +80,41 @@ char *time_estimate(char *buf, const unsigned int dist)
     else if (hour)   sprintf(buf, "%02dh%02d", hour, min);
     else	     sprintf(buf, "%02dm%02d", min, (int)sec);
 
+    return buf;
+}
+
+char *format_coord(char *buf, double latr, double lonr)
+{
+    double lat = radtodeg(latr), lon = radtodeg(lonr);
+
+    switch (coord_format) {
+    case 2:
+	{
+	int lat_deg, lon_deg, lat_min, lon_min;
+	lat_deg = lat; lat = (lat - lat_deg) * 60;
+	lon_deg = lon; lon = (lon - lon_deg) * 60;
+	lat_min = lat; lat = (lat - lat_min) * 60;
+	lon_min = lon; lon = (lon - lon_min) * 60;
+	sprintf(buf, "%2d%c%02d\"%04.1f' %3d%c%02d\"%04.1f'",
+		abs(lat_deg), lat_deg >= 0 ? 'N' : 'S', lat_min, lat,
+		abs(lon_deg), lon_deg >= 0 ? 'W' : 'E', lon_min, lon);
+	}
+	break;
+    case 1:
+	{
+	int lat_deg, lon_deg;
+	lat_deg = lat; lat = (lat - lat_deg) * 60;
+	lon_deg = lon; lon = (lon - lon_deg) * 60;
+	sprintf(buf, "%2d%c%06.3f\" %3d%c%06.3f\"",
+		abs(lat_deg), lat_deg >= 0 ? 'N' : 'S', lat,
+		abs(lon_deg), lon_deg >= 0 ? 'W' : 'E', lon);
+	}
+	break;
+    case 0:
+    default:
+	sprintf(buf, "%12.6f %12.6f", lat, lon);
+	break;
+    }
     return buf;
 }
 

@@ -44,6 +44,10 @@ find_header (char *s, const char *header)
   return s;
 }
 
+const char *val0[] = { "off", "no", "0", "false", "sats", "ddd", NULL };
+const char *val1[] = { "on", "yes", "1", "true", "map", "dmm", NULL };
+const char *val2[] = { "permanent", "route", "dms", NULL };
+
 int
 config_ini_option (char *s, char *match, int *inside)
 {
@@ -59,6 +63,7 @@ config_ini_option (char *s, char *match, int *inside)
     } else {
       if ((f = findchars(s, "="))) {
 	if (strncmp(s,match,f-s) == 0) {
+          int i, len;
 	  char *eof = findchars(s, "\n");
 	  if (!eof)
 	    eof = findchars(s, "\0");
@@ -76,36 +81,18 @@ config_ini_option (char *s, char *match, int *inside)
 	    return 0;
 	  }
 
-	  if (!strncasecmp((char *)f+1, "permanent", (eof-(f+1)))) {
-	    return 2;
-	  }	    
-	  if (!strncasecmp((char *)f+1, "sats", (eof-(f+1)))) {
-	    return 0;
-	  }	    
-	  if (!strncasecmp((char *)f+1, "map", (eof-(f+1)))) {
-	    return 1;
-	  }	    
-	  if (!strncasecmp((char *)f+1, "route", (eof-(f+1)))) {
-	    return 2;
-	  }	    
-	  if (!strncasecmp((char *)f+1, "true", (eof-(f+1)))) {
-	    return 1;
-	  }	    
-	  if (!strncasecmp((char *)f+1, "false", (eof-(f+1)))) {
-	    return 0;
-	  }	    
-	  if (!strncmp((char *)f+1, "1", (eof-(f+1)))) {
-	    return 1;
-	  }	    
-	  if (!strncmp((char *)f+1, "0", (eof-(f+1)))) {
-	    return 0;
-	  }	    
-	  if (!strncasecmp((char *)f+1, "yes", (eof-(f+1)))) {
-	    return 1;
-	  }	    
-	  if (!strncasecmp((char *)f+1, "no", (eof-(f+1)))) {
-	    return 0;
-	  }	    
+	  len = eof - (f+1);
+	  for (i = 0; val2[i] != NULL; i++)
+	      if (!strncasecmp((char *)f+1, val2[i], len))
+		  return 2;
+
+	  for (i = 0; val1[i] != NULL; i++)
+	      if (!strncasecmp((char *)f+1, val1[i], len))
+		  return 1;
+
+	  for (i = 0; val0[i] != NULL; i++)
+	      if (!strncasecmp((char *)f+1, val0[i], len))
+		  return 0;
 	}
       } 
     }

@@ -138,6 +138,12 @@ exit:
     }
     else if (protocol->init)
 	protocol->init();
+
+    /* This a bit of a weird solution. While we're waiting for a fix we don't
+     * have gps time. But if the time is 0 all new satellites will be assigned
+     * to the the first available slot. So we either have to initialize all
+     * empty slots to -1, or... */
+    gps_state.time = 1;
 }
 
 void serial_close(void)
@@ -167,7 +173,6 @@ void serial_poll()
 
     if (serialfd == -1)
 	return;
-
 
     old_gps_time = gps_state.time;
     while (serial_avail()) {

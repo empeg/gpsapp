@@ -42,8 +42,8 @@ struct gps_state {
     int	    fix;	/* type of last fix (0 = No fix, 2 = 2D, 3 = 3D) */
     double  hdop;	/* horizontal dillution of precision */
 
-    double  lat;	/* latitude in degrees [-180, 180] */
-    double  lon;	/* longtitude in degrees [-90, 90] */
+    double  lat;	/* latitude in radians [-PI/2, PI/2] */
+    double  lon;	/* longtitude in radians [-PI, PI] */
     double  alt;	/* altitude */
 
     int	    bearing;	/* current bearing degrees [0, 360] */

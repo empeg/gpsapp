@@ -145,6 +145,7 @@ int empeg_init(void)
 
 void empeg_free(void)
 {
+    XFreeGC(display, gc);
     XCloseDisplay(display);
 }
 

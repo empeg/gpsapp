@@ -18,6 +18,7 @@ extern int show_rubberband;
 extern int show_metric;
 extern int show_popups;
 extern int show_time;
+extern int coord_format; /* DDD = 0, DMM = 1, DMS = 2 */
 
 /* screen coordinates */
 struct xy { int x, y; };
@@ -51,8 +52,9 @@ extern struct coord coord_center;
 #define degtorad(deg) (deg * ((2.0 * M_PI) / 360.0))
 #define radtodeg(rad) (rad * (360.0 / (2.0 * M_PI)))
 
-char *formatdist(char *buf, const unsigned int distance, const int alt);
-char *time_estimate(char *buf, const unsigned int distance);
+char *formatdist(char *buf, const int distance, const int alt);
+char *time_estimate(char *buf, const int distance);
+char *format_coord(char *buf, double latr, double lonr);
 
 void toTM(struct coord *point);
 long long distance2(const struct xy *coord1, const struct xy *coord2);

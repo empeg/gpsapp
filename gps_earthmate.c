@@ -35,8 +35,8 @@ static void em_1000geodpos(struct gps_state *gps)
     if (solinv) gps->fix = 0;
     else	gps->fix = 1;
 
-    gps->lat = radtodeg(INT32(&packet[WD(27)]) * 1.0e-8);
-    gps->lon = radtodeg(INT32(&packet[WD(29)]) * 1.0e-8);
+    gps->lat = INT32(&packet[WD(27)]) * 1.0e-8;
+    gps->lon = INT32(&packet[WD(29)]) * 1.0e-8;
     gps->alt = INT32(&packet[WD(31)]) * 1.0e-2;
     speed = ((unsigned int)INT32(&packet[WD(34)])) * 1.0e-2;
     bearing = radtodeg(INT16(&packet[WD(36)]) * 1.0e-3);

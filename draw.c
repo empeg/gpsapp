@@ -187,22 +187,22 @@ void draw_scale(void)
 {
     char buf[10];
 
-    formatdist(buf, 8 << map_scale, 0);
+    formatdist(buf, 32 << map_scale, 0);
 
-    vfdlib_drawLineHorizUnclipped(screen, 0, MAX_X - 4, 3, -1);
-    vfdlib_drawLineHorizUnclipped(screen, 7, MAX_X - 4, 3, -1);
-    vfdlib_drawLineVertUnclipped(screen, MAX_X - 3, 1, 6, -1);
-    vfdlib_drawText(screen, buf, MAX_X - 3 - vfdlib_getTextWidth(buf, 0),
-		    1, 0, -1);
+#if 0
+    vfdlib_drawLineHorizUnclipped(screen, 0, MAX_X - 4, 3, VFDSHADE_BRIGHT);
+    vfdlib_drawLineHorizUnclipped(screen, 7, MAX_X - 4, 3, VFDSHADE_BRIGHT);
+    vfdlib_drawLineVertUnclipped(screen, MAX_X - 3, 1, 6, VFDSHADE_BRIGHT);
+#endif
+    vfdlib_drawText(screen, buf, MAX_X - vfdlib_getTextWidth(buf, 0), 1, 0,
+		    VFDSHADE_MEDIUM);
 }
 
 void draw_gpscoords(void)
 {
-    char line[13];
-    sprintf(line, "%12.6f", radtodeg(gps_coord.lat));
-    vfdlib_drawText(screen, line, 0, 0, 0, VFDSHADE_DIM);
-    sprintf(line, "%12.6f", radtodeg(gps_coord.lon));
-    vfdlib_drawText(screen, line, 0, h0, 0, VFDSHADE_DIM);
+    char line[26];
+    format_coord(line, gps_coord.lat, gps_coord.lon);
+    vfdlib_drawText(screen, line, 0, 1, 0, VFDSHADE_DIM);
 }
 
 void draw_info(void)
@@ -384,7 +384,7 @@ void err(char *msg)
 
 void draw_sats(struct gps_state *gps)
 {
-    char line[13];
+    char line[26];
     int i, height, x, y, data = 0;
     int gshade, tshade, nsvs = 0;
     int w0;
@@ -392,6 +392,12 @@ void draw_sats(struct gps_state *gps)
     /* Draw a center point and circle for the satellite position display */
     vfdlib_drawOutlineEllipseClipped(screen, 112, 15, 15, 15, VFDSHADE_DIM);
     vfdlib_drawPointUnclipped(screen, 112, 15, VFDSHADE_DIM);
+
+    /* draw lines at approximately 20db intervals. */
+    vfdlib_drawLineHorizUnclipped(screen, VFD_HEIGHT-h0-1, 0, 64, VFDSHADE_DIM);
+    vfdlib_drawLineHorizUnclipped(screen, VFD_HEIGHT-h0-6, 0, 64, VFDSHADE_DIM);
+    vfdlib_drawLineHorizUnclipped(screen, VFD_HEIGHT-h0-11,0, 64, VFDSHADE_DIM);
+    vfdlib_drawLineHorizUnclipped(screen, VFD_HEIGHT-h0-16,0, 64, VFDSHADE_DIM);
 
     for (i = 0; i < MAX_TRACKED_SATS; i++) {
 	if (!gps->sats[i].svn) continue;
@@ -424,11 +430,9 @@ void draw_sats(struct gps_state *gps)
 	vfdlib_drawText(screen, line, x, y, 0, tshade);
     }
 
-#if 0
     /* show coordinates? */
-    format_coords(line, gps_state.lat, gps_state.lon);
-    vfdlib_drawText(screen, line, 0, 0, 0, -1);
-#endif
+    format_coord(line, gps_state.lat, gps_state.lon);
+    vfdlib_drawText(screen, line, 8, 0, 0, -1);
 
     /* show altitude */
     formatdist(line, gps_state.alt, 1);
@@ -437,7 +441,9 @@ void draw_sats(struct gps_state *gps)
 		    gps_state.fix == 3 ? -1 : VFDSHADE_MEDIUM);
 
     /* show HDOP */
-    sprintf(line, "%4.2f HD", gps_state.hdop);
+    if (gps_state.hdop < 100.0)
+	 sprintf(line, "%4.2f HD", gps_state.hdop);
+    else strcpy(line, "--.-- HD");
     w0 = vfdlib_getTextWidth(line, 0);
     vfdlib_drawText(screen, line, 96-w0, 2*(h0+1), 0,
 		    gps_state.fix ? -1 : VFDSHADE_MEDIUM);
@@ -445,7 +451,7 @@ void draw_sats(struct gps_state *gps)
     /* show fix and # of svs used */
     {
 	char *fixes[] = {"--", "  ", "2D", "3D" };
-	sprintf(line, "%s %2dSV", fixes[gps_state.fix], nsvs);
+	sprintf(line, "%s %2d SV", fixes[gps_state.fix], nsvs);
 	w0 = vfdlib_getTextWidth(line, 0);
 	vfdlib_drawText(screen, line, 96-w0, 3*(h0+1), 0, -1);
     }

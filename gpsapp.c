@@ -21,6 +21,7 @@ enum {
 } visual;
 int show_metric     = 0;
 int show_gpscoords  = 0;
+int coord_format    = 0;
 int show_rubberband = 1;
 int show_track      = 1;
 
@@ -48,6 +49,7 @@ static char *menu_msg[] = {
     "Toggle Rubberband",
     "Toggle Distance/Time",
     "Toggle Track",
+    "Toggle DDD/DMM/DMS",
 };
 #define MENU_ENTRIES 8
 
@@ -100,10 +102,6 @@ static void refresh_display(void)
 
 	    /* add focus to next waypoint */
 	    draw_mark(&pos, -1, VFDSHADE_MEDIUM);
-#if 0
-	    if (show_rubberband)
-	    	draw_line(&gps_coord.xy, &pos, VFDSHADE_BRIGHT);
-#endif
 	}
 
 	/* draw our own location */
@@ -138,6 +136,12 @@ static void refresh_display(void)
 	case 5: msg = (show_rubberband?"Rubberband":"No Rubberband"); break;
 	case 6: msg = (show_time?"Time":"Distance"); break;
 	case 7: msg = (show_track?"Track":"No Track"); break;
+	case 8: switch (coord_format) {
+		case 0: msg = "DDD Coords"; break;
+		case 1: msg = "DMM Coords"; break;
+		case 2: msg = "DMS Coords"; break;
+		}
+		break;
 	}
 	if (msg)
 	    draw_msg(msg);
@@ -234,6 +238,10 @@ static int handle_input(void)
 	    case 5: show_rubberband = 1 - show_rubberband; break;
 	    case 6: show_time = 1 - show_time; break;
 	    case 7: show_track = 1 - show_track; break;
+	    case 8:
+		if (++coord_format == 3)
+		    coord_format = 0;
+		break;
 	    }
 	    menu = 0; lastmenu = 3; lastmenu_pos = menu_pos;
 	}
@@ -302,6 +310,8 @@ init_gpsapp()
     int fd = open("empeg/var/config.ini", O_RDONLY);
     int inside = 0;
 
+    if (fd == -1) return;
+
     while ((bytes=read(fd, buf, 512))>CONFIG_HDRLEN) {
 	buf[bytes]='\0';
 	offset=CONFIG_HDRLEN; 
@@ -314,6 +324,8 @@ init_gpsapp()
 	if (ret > -1 && ret < 2) show_metric = ret;
 	ret = config_ini_option (buf, "gpscoords", &inside);
 	if (ret > -1 && ret < 2) show_gpscoords = ret;
+	ret = config_ini_option (buf, "coord_format", &inside);
+	if (ret > -1 && ret < 3) coord_format = ret;
 	ret = config_ini_option (buf, "rubberband", &inside);
 	if (ret > -1 && ret < 2) show_rubberband = ret;
 	ret = config_ini_option (buf, "track", &inside);
@@ -380,6 +392,9 @@ int main(int argc, char **argv)
 	    timeout.tv_usec = 100000;
 	    select(0, NULL, NULL, NULL, &timeout);
 	}
+#ifndef __arm__
+	break;
+#endif
     }
 
     serial_close();
