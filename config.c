@@ -90,6 +90,15 @@ config_ini_option (char *s, char *match, int *inside)
 	    return 0;
 	  }
 
+	  /* Special handling for "serialport" */
+	  if (!strcmp(match, "routedir")) {
+	    int sz = (eof-(f+1)); /* reserve \0 */
+	    serport=(char *)malloc(sz);
+	    strncpy(routedir, (char *)f+1, sz); /* maybe no \0 */
+	    routedir[sz] = '\0'; 
+	    return 0;
+	  }
+
 	  len = eof - (f+1);
 	  for (i = 0; val2[i] != NULL; i++)
 	      if (!strncasecmp((char *)f+1, val2[i], len))

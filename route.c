@@ -26,6 +26,7 @@ static int total_dist;
 static int minidx;
 
 #define ROUTE_DIR "programs0/routes"
+char *routedir = NULL;
 static int selected_route;
 static char **routes;
 static int nroutes;
@@ -46,7 +47,7 @@ int routes_init(void)
     routes = NULL;
     nroutes = 0;
 
-    dir = opendir(ROUTE_DIR);
+    dir = opendir(routedir?routedir:ROUTE_DIR);
     if (!dir) return 0;
 
     while ((entry = readdir(dir)) != NULL)
@@ -69,7 +70,7 @@ int routes_init(void)
 	entry = readdir(dir);
 	if (!entry) break;
 
-	strcpy(buf, ROUTE_DIR);
+	strcpy(buf, routedir?routedir:ROUTE_DIR);
 	strcat(buf, "/");
 	strcat(buf, entry->d_name);
 
@@ -112,7 +113,7 @@ void route_load(void)
     if (!routes || selected_route < 0 || selected_route >= nroutes)
 	return;
 
-    strcpy(buf, ROUTE_DIR);
+    strcpy(buf, routedir?routedir:ROUTE_DIR);
     strcat(buf, "/");
     strcat(buf, routes[selected_route]);
 

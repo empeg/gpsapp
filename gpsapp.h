@@ -20,6 +20,7 @@ extern int show_time;
 extern int coord_format; /* DDD = 0, DMM = 1, DMS = 2 */
 extern int do_coldstart;
 extern char *serport;
+extern char *routedir;
 
 /* screen coordinates */
 struct xy { int x, y; };
@@ -109,7 +110,7 @@ extern int		gps_bearing;   /* last 'stable' bearing measurement */
 #define AVGVMG_SHIFT 6
 
 void serial_protocol(char *proto);
-void serial_open();
+void serial_open(void);
 void serial_close(void);
 void serial_poll(void);
 

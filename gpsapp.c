@@ -316,6 +316,7 @@ init_gpsapp()
 	/* special cases, handled internal to config_ini_option */
 	config_ini_option (buf, "protocol", &inside);
 	config_ini_option (buf, "serialport", &inside);
+	config_ini_option (buf, "routedir", &inside);
 
 	ret = config_ini_option (buf, "visual", &inside);
 	if (ret > -1 && ret < 3) visual = ret;

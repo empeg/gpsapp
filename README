@@ -103,6 +103,8 @@ Installation
   o coldstart=[true|false]
     allow GPS coldstart. defaults to true. only works for Zodiac-based GPS
     units, like Earthmate and Rand McNally
+  o routedir=/programs0/routes
+    allows you to change the default directory for loading routes
 
 Short operating instructions
 

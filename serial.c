@@ -85,7 +85,7 @@ static int gpsd_open(void)
 }
 #endif
 
-void serial_open()
+void serial_open(void)
 {
     int ret = -1, parity;
     speed_t spd;
