@@ -187,7 +187,7 @@ void draw_scale(void)
 {
     char buf[10];
 
-    formatdist(buf, 32 << map_scale, 0);
+    formatdist(buf, 8 << map_scale, 0);
 
 #if 0
     vfdlib_drawLineHorizUnclipped(screen, 0, MAX_X - 4, 3, VFDSHADE_BRIGHT);
@@ -213,8 +213,10 @@ void draw_info(void)
     struct xy pos;
     double b2;
 
-    vfdlib_drawLineVertUnclipped(screen, VFD_WIDTH - VFD_HEIGHT, 0, VFD_HEIGHT,
-				 VFDSHADE_DIM);
+    vfdlib_drawLineVertUnclipped(screen, MAX_X, 0, 7, VFDSHADE_MEDIUM);
+    vfdlib_drawLineVertUnclipped(screen, MAX_X, 8, 15, VFDSHADE_DIM);
+    vfdlib_drawLineVertUnclipped(screen, MAX_X, 16, 24, VFDSHADE_MEDIUM);
+    vfdlib_drawLineVertUnclipped(screen, MAX_X, 24, 32, VFDSHADE_DIM);
 
     if (route_getwp(-1, NULL, &dist, NULL)) {
 	if (show_time) time_estimate(buf, dist);

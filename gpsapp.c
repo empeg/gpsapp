@@ -22,7 +22,6 @@ enum {
 int show_metric     = 0;
 int show_gpscoords  = 0;
 int coord_format    = 0;
-int show_rubberband = 1;
 int show_track      = 1;
 
 int show_scale      = 1;
@@ -46,7 +45,6 @@ static char *menu_msg[] = {
     "Toggle Popups",
     "Toggle Miles/Meters",
     "Toggle Coordinates",
-    "Toggle Rubberband",
     "Toggle Distance/Time",
     "Toggle Track",
     "Toggle DDD/DMM/DMS",
@@ -133,10 +131,9 @@ static void refresh_display(void)
 		break;
 	case 3: msg = (show_metric?"Meters":"Miles"); break;
 	case 4: msg = (show_gpscoords?"Coordinates":"No Coordinates"); break;
-	case 5: msg = (show_rubberband?"Rubberband":"No Rubberband"); break;
-	case 6: msg = (show_time?"Time":"Distance"); break;
-	case 7: msg = (show_track?"Track":"No Track"); break;
-	case 8: switch (coord_format) {
+	case 5: msg = (show_time?"Time":"Distance"); break;
+	case 6: msg = (show_track?"Track":"No Track"); break;
+	case 7: switch (coord_format) {
 		case 0: msg = "DDD Coords"; break;
 		case 1: msg = "DMM Coords"; break;
 		case 2: msg = "DMS Coords"; break;
@@ -235,10 +232,9 @@ static int handle_input(void)
 		break;
 	    case 3: show_metric = 1 - show_metric; break;
 	    case 4: show_gpscoords = 1 - show_gpscoords;  break;
-	    case 5: show_rubberband = 1 - show_rubberband; break;
-	    case 6: show_time = 1 - show_time; break;
-	    case 7: show_track = 1 - show_track; break;
-	    case 8:
+	    case 5: show_time = 1 - show_time; break;
+	    case 6: show_track = 1 - show_track; break;
+	    case 7:
 		if (++coord_format == 3)
 		    coord_format = 0;
 		break;
@@ -326,8 +322,6 @@ init_gpsapp()
 	if (ret > -1 && ret < 2) show_gpscoords = ret;
 	ret = config_ini_option (buf, "coord_format", &inside);
 	if (ret > -1 && ret < 3) coord_format = ret;
-	ret = config_ini_option (buf, "rubberband", &inside);
-	if (ret > -1 && ret < 2) show_rubberband = ret;
 	ret = config_ini_option (buf, "track", &inside);
 	if (ret > -1 && ret < 2) show_track = ret;
 	ret = config_ini_option (buf, "scale", &inside);

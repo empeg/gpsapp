@@ -14,7 +14,6 @@
 /* configuration settings */
 extern int show_scale;
 extern int show_gpscoords;
-extern int show_rubberband;
 extern int show_metric;
 extern int show_popups;
 extern int show_time;
