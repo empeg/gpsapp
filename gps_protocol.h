@@ -31,14 +31,15 @@ struct gps_protocol {
     struct gps_protocol *next;
     char *name;
     int baud;
+    char parity;
     void (*init)(void);
     int (*update)(char c, struct gps_state *state);
 };
 
 extern struct gps_protocol *gps_protocols;
 
-#define REGISTER_PROTOCOL(proto_name, serial_baud, initfunc, updatefunc) \
-  static struct gps_protocol __this = { .name = proto_name, .baud = serial_baud, .init = initfunc, .update = updatefunc }; \
+#define REGISTER_PROTOCOL(proto_name, serial_baud, serial_parity, initfunc, updatefunc) \
+  static struct gps_protocol __this = { .name = proto_name, .baud = serial_baud, .parity = serial_parity, .init = initfunc, .update = updatefunc }; \
   static __attribute__((constructor)) void ___init(void) { __this.next = gps_protocols; gps_protocols = &__this; }
 
 /* automatic destructors don't work right on the arm, or did I mess this up?? */

@@ -1,15 +1,14 @@
-* The current method for figuring where we are in a route often
-  incorrectly picks the wrong waypoint.
-
-* Averaging the speed doesn't make the estimated time much better. It
-  looks like the garmin etrex is using something called velocity made
-  good. I guess it is the actual speed towards the target. Right now we
-  have a positive speed even when we're driving at 100mph away from our
-  destination.
+* Satellite strength display.
 
 * Display current speed/averaged speed/magnetic north/GPS time.
   Probably not really enough room on the display for too much more
-  information.
+  information. New screen?
+
+* NMEA output over IRDA.
+
+* Rotate map so that the top is in the direction we're driving. Have to
+  transform all coordinates, maybe too CPU intensive? Also we have fewer
+  pixels in that direction.
 
 * Use the bearing pointer as a compass when no route is loaded.
   (Need a way to discard the current route then...)
@@ -19,22 +18,17 @@
 
 * Cleanup python scripts.
 
-* Automatically generate the 'Continue onto, bear left/right,
-  left/right, sharp left/right based on the direction in which we
-  approach and leave a waypoint. This allows us to simplify the
-  descriptions and to correct them when we're approaching a route
-  from a different direction.
-
-* Tiger/Line dataset to street level map conversion.
-
-* Other than NMEA gps interfacing code (Earthmate/Tripmate/Trimble/Oncore/
-  Garmin/Magellan/Lowrance/gpsd?).
-
-* Can we derive the local timezone offset from the GPS data in some way?
-  Currently we need a good /etc/localtime to get the estimated time of
-  arrival right.
+* Tiger/Line dataset to street map conversion.
 
 * Actually try to do on-the-fly routing based on the Tiger/Line mapdata.
   Although they don't contain one-way street information, however if we
   can reroute dynamically that should only be a minor problem.
 
+* More GPS protocol support (Earthmate/Tripmate/Oncore/Magellan/Lowrance?)
+
+* Derive the local timezone offset and daylight savings time from the
+  GPS data in some way.
+
+* Sync the empeg clock based on GPS time. We need to be able to derive
+  localtime first, and have some estimate of the additional delays
+  introduced by serial and gpsapp.

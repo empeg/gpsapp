@@ -352,5 +352,5 @@ static int nmea_update(char c, struct gps_state *gps)
     return 0;
 }
 
-REGISTER_PROTOCOL("NMEA", 4800, NULL, nmea_update);
+REGISTER_PROTOCOL("NMEA", 4800, 'N', NULL, nmea_update);
 

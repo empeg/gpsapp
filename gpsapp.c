@@ -21,7 +21,6 @@ int show_track      = 1;
 
 int show_scale      = 1;
 int show_popups     = 1;
-int show_abs	    = 0;
 int show_time	    = 0;
 
 /* height of font 0, used a lot, so looking it up once might be useful */
@@ -36,11 +35,11 @@ static int menu_pos;
 static char *menu_msg[] = {
     "Load Route",
     "Toggle Text/Map",
+    "Toggle Popups",
     "Toggle Miles/Meters",
     "Toggle Coordinates",
     "Toggle Rubberband",
     "Toggle Distance/Time",
-    "Toggle Absolute/Relative",
     "Toggle Track",
 };
 #define MENU_ENTRIES 8
@@ -94,7 +93,7 @@ static void refresh_display(void)
 	}
 
 	/* draw our own location */
-	draw_mark(&gps_coord.xy, gps_state.bearing, VFDSHADE_BRIGHT);
+	draw_mark(&gps_coord.xy, gps_bearing, VFDSHADE_BRIGHT);
 
 	vfdlib_setClipArea(0, 0, VFD_WIDTH, VFD_HEIGHT);
 	draw_info();
@@ -160,11 +159,11 @@ static int handle_input(void)
 	    switch(menu_pos) {
 	    case 0: load_route = routes_init(); break;
 	    case 1: visual = 1 - visual; break;
-	    case 2: show_metric = 1 - show_metric; break;
-	    case 3: show_gpscoords = 1 - show_gpscoords;  break;
-	    case 4: show_rubberband = 1 - show_rubberband; break;
-	    case 5: show_time = 1 - show_time; break;
-	    case 6: show_abs = 1 - show_abs; break;
+	    case 2: show_popups = 1 -  show_popups; break;
+	    case 3: show_metric = 1 - show_metric; break;
+	    case 4: show_gpscoords = 1 - show_gpscoords;  break;
+	    case 5: show_rubberband = 1 - show_rubberband; break;
+	    case 6: show_time = 1 - show_time; break;
 	    case 7: show_track = 1 - show_track; break;
 	    }
 	    menu = 0;
@@ -199,7 +198,14 @@ static int handle_input(void)
 	break;
 
     case IR_KNOB_LEFT:
+	route_skipwp(-1);
+	do_refresh = 1;
+	break;
     case IR_KNOB_RIGHT:
+	route_skipwp(1);
+	route_locate();
+	do_refresh = 1;
+	break;
     case IR_KNOB_PRESSED:
     default:
 	break;

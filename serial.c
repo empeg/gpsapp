@@ -34,7 +34,9 @@ struct gps_state gps_state;
 
 /* we update these whenever the location is updated */
 struct coord gps_coord;
-int	     gps_avgvmg; /* updated by route_update_gps_speed() */
+int	     gps_speed;
+int	     gps_avgvmg;
+int	     gps_bearing;
 
 struct gps_protocol *gps_protocols;       /* list of all protocols. */
 static struct gps_protocol *protocol; /* currently selected protocol */
@@ -80,7 +82,7 @@ static int gpsd_open(void)
 
 void serial_open(void)
 {
-    int ret = -1, spd;
+    int ret = -1, spd, parity;
     struct termios termios;
 
     if (serialfd != -1)
@@ -107,10 +109,16 @@ void serial_open(void)
     case 4800:
     default:   spd = B4800; break;
     }
+    switch(protocol->parity) {
+    case 'O': parity = PARENB | PARODD; break;
+    case 'E': parity = PARENB; break;
+    case 'N': 
+    default:  parity = 0; break;
+    }
 
     termios.c_iflag = 0;
     termios.c_oflag = ONLRET;
-    termios.c_cflag = (CSIZE & CS8) | CREAD | CLOCAL;
+    termios.c_cflag = (CSIZE & CS8) | CREAD | CLOCAL | parity;
     termios.c_lflag = 0;
     cfsetispeed(&termios, spd);
     cfsetospeed(&termios, spd);
@@ -167,9 +175,25 @@ void serial_poll()
 	gps_coord.lat = gps_state.lat;
 	gps_coord.lon = gps_state.lon;
 
+	route_recenter();
+
 	toTM(&gps_coord);
 	track_pos();
+
+	gps_speed = sqrt(gps_state.spd_east * gps_state.spd_east +
+			 gps_state.spd_north * gps_state.spd_north +
+			 gps_state.spd_up * gps_state.spd_up) * 3600.0;
+
+	/* According to ellweber, bearing measurements are pretty flaky when
+	 * we're moving slower than 1-2 km/h */
+	if (gps_speed >= 1500)
+	    gps_bearing = gps_state.bearing;
+
 	route_locate();
+
+	if (gps_speed >= 1500)
+	    route_update_vmg();
+
 	do_refresh = 1;
     }
 }

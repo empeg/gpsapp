@@ -17,7 +17,6 @@ extern int show_gpscoords;
 extern int show_rubberband;
 extern int show_metric;
 extern int show_popups;
-extern int show_abs;
 extern int show_time;
 
 /* screen coordinates */
@@ -90,15 +89,20 @@ void route_select(int updown);
 void route_load(void);
 void route_init(void);
 void route_locate(void);
+void route_skipwp(int dir);
 void route_draw(struct xy *cur_pos);
 int route_getwp(const int wp, struct xy *pos, unsigned int *dist, char **desc);
+void route_recenter(void);
+void route_update_vmg(void);
 
 /* serial port/gps interfacing functions (serial.c) */
 
 extern struct gps_state gps_state;
 extern struct coord     gps_coord;
+extern int		gps_speed;     /* current speed measurement */
 extern int              gps_avgvmg;    /* average velocity made good */
-#define AVGVMG_SHIFT 5
+extern int		gps_bearing;   /* last 'stable' bearing measurement */
+#define AVGVMG_SHIFT 6
 
 void serial_protocol(char *proto);
 void serial_open(void);

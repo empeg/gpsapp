@@ -1,16 +1,15 @@
 #!/usr/bin/python
 
-import string, re, sys
+import string, re, sys, os
 from convert import *
 
 # we can relatively easily regenerate all (or most) of this information
 discard="((Start|End)\sPoint|FOLLOW|CONTINUE|BEARS?|TURN|SHARPLY|LEFT|RIGHT|onto|as road goes into|as it|Head\s(NORTH|WEST|EAST|SOUTH)\son)\s?"
 
 class Wpoint:
-    def __init__(self, coord, desc = "", dist = 0):
+    def __init__(self, coord, desc = ""):
 	self.coord = coord
 	self.desc = string.strip(re.sub(discard, "", desc))
-	self.dist = dist
 
 def NAD27toWGS84(coord):
     return ConvertDatum(coord, Datum_NAD27_CONUS, Datum_WGS84)
@@ -40,15 +39,15 @@ def parse(mapsonus_rawroute):
 		    Wpoint(NAD27toWGS84(Coord(lat, long)), desc)
 		continue
 	    elif parts[0] == "TURN":
-		#idx  = int(parts[1])
+		#idx = int(parts[1])
 		long = float(parts[2])
 		lat  = float(parts[3])
 		pnt  = int(parts[4])
 		npts = int(parts[5])
 		turn = int(parts[6])
-		#ohdg = int(parts[7])
-		#ihdg = int(parts[8])
-		#km   = float(parts[9])
+		#outhdg = int(parts[7])
+		#inhdg  = int(parts[8])
+		#km     = float(parts[9])
 		desc = string.join(parts[10:])
 		if pnt != next_point:
 		    print "parse error?"
@@ -84,13 +83,18 @@ def parse(mapsonus_rawroute):
 		waypoints.append(Wpoint(coords[i]))
     return waypoints
 	
+
+
+
 if not sys.argv[1:]:
     print "Usage: %s <raw route>\n\tWhere raw route is the saved Raw Route Description from\n\tmapsonus.switchboard.com in html format" % sys.argv[0]
     sys.exit(-1)
 
-wpoints = parse(sys.argv[1])
+inname = sys.argv[1]
+outname = os.path.basename(os.path.splitext(inname)[0])
+wpoints = parse(inname)
 
-#find center point
+# find center point
 min = Coord(wpoints[0].coord.lat, wpoints[0].coord.long)
 max = Coord(wpoints[0].coord.lat, wpoints[0].coord.long)
 for wp in wpoints:
@@ -98,34 +102,21 @@ for wp in wpoints:
     if wp.coord.long < min.long: min.long = wp.coord.long
     if wp.coord.lat > max.lat:   max.lat  = wp.coord.lat
     if wp.coord.long > max.long: max.long = wp.coord.long
-
-wps = 0
 center = Coord((min.lat + max.lat) / 2, (min.long + max.long) / 2)
+
+# project all points to a rectangular grid around the center
+wps = 0
 for wp in wpoints:
     wp.xy = project(wp.coord, center)
     if wp.desc: wps = wps + 1
-    #print "prj %.8f %.8f %.8f %.8f %d %d" % (center.lat, center.long, wp.coord.lat, wp.coord.long, wp.xy[0], wp.xy[1])
-
-# fill in distances to endpoint
-dist = 0.0
-for i in range(len(wpoints)-1, 0, -1):
-    wpoints[i].dist = dist
-    dist = dist + Quick_Distance(wpoints[i].coord, wpoints[i-1].coord, Datum_WGS84) 
-wpoints[0].dist = dist
 
 
-import struct
-out = open("route", "w")
+# and write out what we have
+out = open(outname, "w")
 
-DEGTOINT = ((1L<<31)-1) / 180.0
-#print "hdr %f %f %d %d" % (center.lat, center.long, len(wpoints), wps)
-#print "hdr %d %d %d %d" % (center.lat * DEGTOINT, center.long * DEGTOINT, len(wpoints), wps)
-#buf = struct.pack("<iiII", int(center.lat * DEGTOINT), int(center.long * DEGTOINT), len(wpoints), wps)
 buf = "%.6f %.6f %d %d\n" % (center.lat, center.long, len(wpoints), wps)
 out.write(buf)
 for wp in wpoints:
-    #print "pts %.8f %.8f %d" % (wp.coord.lat, wp.coord.long, wp.dist)
-    #buf = struct.pack("<iiI", wp.xy[0], wp.xy[1], wp.dist)
     buf = "%d %d %s\n" % (wp.xy[0], wp.xy[1], wp.desc)
     out.write(buf)
 

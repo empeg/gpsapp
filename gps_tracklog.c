@@ -102,5 +102,5 @@ next:
     return 1;
 }
 
-REGISTER_PROTOCOL("TRACKLOG", 0, tracklog_init, tracklog_update);
+REGISTER_PROTOCOL("TRACKLOG", 0, 'N', tracklog_init, tracklog_update);
 

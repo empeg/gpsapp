@@ -184,21 +184,23 @@ void draw_msg(const char *msg)
 void draw_scale(void)
 {
     char buf[10];
-    vfdlib_drawLineHorizUnclipped(screen, 0, 0, 3, VFDSHADE_DIM);
-    vfdlib_drawLineHorizUnclipped(screen, 7, 0, 3, VFDSHADE_DIM);
-    vfdlib_drawLineVertUnclipped(screen, 1, 1, 6, VFDSHADE_DIM);
-    vfdlib_drawText(screen, formatdist(buf, 8 << map_scale), 3, 1, 0, VFDSHADE_DIM);
+
+    formatdist(buf, 8 << map_scale);
+
+    vfdlib_drawLineHorizUnclipped(screen, 0, MAX_X - 4, 3, VFDSHADE_DIM);
+    vfdlib_drawLineHorizUnclipped(screen, 7, MAX_X - 4, 3, VFDSHADE_DIM);
+    vfdlib_drawLineVertUnclipped(screen, MAX_X - 3, 1, 6, VFDSHADE_DIM);
+    vfdlib_drawText(screen, buf, MAX_X - 3 - vfdlib_getTextWidth(buf, 0),
+		    1, 0, VFDSHADE_DIM);
 }
 
 void draw_gpscoords(void)
 {
     char line[13];
-    sprintf(line, "%12.6f", radtodeg(gps_coord.lat));
-    vfdlib_drawText(screen, line, MAX_X - vfdlib_getTextWidth(line, 0),
-		    0, 0, VFDSHADE_DIM);
-    sprintf(line, "%12.6f", radtodeg(gps_coord.lon));
-    vfdlib_drawText(screen, line, MAX_X - vfdlib_getTextWidth(line, 0),
-		    h0, 0, VFDSHADE_DIM);
+    sprintf(line, "%10.6f", radtodeg(gps_coord.lat));
+    vfdlib_drawText(screen, line, 0, 0, 0, VFDSHADE_DIM);
+    sprintf(line, "%10.6f", radtodeg(gps_coord.lon));
+    vfdlib_drawText(screen, line, 0, h0, 0, VFDSHADE_DIM);
 }
 
 void draw_info(void)
@@ -232,18 +234,16 @@ void draw_info(void)
     draw_popup(show_popups && dist < 1000 ? desc : NULL);
 
     /* draw pointer */
-    if (gps_state.bearing != -1) {
-	b = radtodeg(bearing(&gps_coord.xy, &pos)) - gps_state.bearing;
-	while (b < 0) b += 360;
-	center_x = VFD_WIDTH - VFD_HEIGHT / 2;
-	center_y = VFD_HEIGHT / 2;
-	b2 = degtorad(b);
-	tip_x = center_x + (int)(6.0 * sin(b2));
-	tip_y = center_y - (int)(6.0 * cos(b2));
-	vfdlib_drawLineUnclipped(screen, center_x, center_y,
-				 tip_x, tip_y, VFDSHADE_BRIGHT);
-	_draw_mark(tip_x, tip_y, b, VFDSHADE_BRIGHT);
-    }
+    b = radtodeg(bearing(&gps_coord.xy, &pos)) - gps_bearing;
+    while (b < 0) b += 360;
+    center_x = VFD_WIDTH - VFD_HEIGHT / 2;
+    center_y = VFD_HEIGHT / 2;
+    b2 = degtorad(b);
+    tip_x = center_x + (int)(6.0 * sin(b2));
+    tip_y = center_y - (int)(6.0 * cos(b2));
+    vfdlib_drawLineUnclipped(screen, center_x, center_y,
+			     tip_x, tip_y, VFDSHADE_BRIGHT);
+    _draw_mark(tip_x, tip_y, b, VFDSHADE_BRIGHT);
 }
 
 void draw_wpstext(void)
@@ -304,12 +304,9 @@ void draw_wpstext(void)
 
 	if (show_time) time_estimate(buf, dist);
 	else {
-	    /* Do we want to use absolute or relative wp-distances? */
-	    if (!show_abs) {
-		if (i > 1 || (i == 1 && !voff)) {
-		    vfdlib_drawText(screen, "+", 0, vert, 0, -1);
-		    route_getwp(topwp + i - 1, NULL, &last_dist, NULL);
-		}
+	    if (i > 1 || (i == 1 && !voff)) {
+		vfdlib_drawText(screen, "+", 0, vert, 0, -1);
+		route_getwp(topwp + i - 1, NULL, &last_dist, NULL);
 	    }
 	    formatdist(buf, abs(dist - last_dist));
 	}

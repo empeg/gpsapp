@@ -140,5 +140,5 @@ restart:
     return 0;
 }
 
-REGISTER_PROTOCOL("GARMIN", 9600, garmin_init, garmin_update);
+REGISTER_PROTOCOL("GARMIN", 9600, 'N', garmin_init, garmin_update);
 

@@ -277,5 +277,5 @@ restart:
     return 0;
 }
 
-REGISTER_PROTOCOL("TSIP", 9600, tsip_init, tsip_update);
+REGISTER_PROTOCOL("TSIP", 9600, 'O', tsip_init, tsip_update);
 

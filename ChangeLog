@@ -1,3 +1,18 @@
+Changes in v0.7
+
+ * Using ellwebers suggestion to freeze the bearing pointer whenever the speed
+   drops below 1-2 km/h.
+ * Initialize map center coordinate on the first fix when no route is loaded.
+ * Removed absolute/relative option. It didn't do much for distances and the
+   attempt to get local time from UTC was wrong anyways.
+ * Using 8O1 instead of 8N1 for TSIP.
+ * The next three are some of genixia's suggestions
+   Added menu entry to toggle the 'textual turn description' popup in the
+   map screen.
+ * Swapped location of the scale and coordinate on the map screen.
+ * Dumbed down the route tracking algorithm, you can twist the knob to force
+   gpsapp to pick the next or previous waypoint.
+
 Changes in v0.6
 
  * Using ascii route description file.

@@ -94,5 +94,5 @@ restart:
     return 0;
 }
 
-REGISTER_PROTOCOL("TAIP", 4800, taip_init, taip_update);
+REGISTER_PROTOCOL("TAIP", 4800, 'N', taip_init, taip_update);
 

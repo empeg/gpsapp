@@ -54,20 +54,12 @@ char *formatdist(char *buf, const unsigned int dist)
 /* buf needs to be at least 10 characters */
 char *time_estimate(char *buf, const unsigned int dist)
 {
-    struct tm *tm;
     int hour, min;
     time_t sec;
     int vmg = abs(gps_avgvmg >> AVGVMG_SHIFT);
 
     if (!dist) {
-	if (show_abs) {
-	    tm = localtime(&gps_state.time);
-
-	    hour = tm->tm_hour;
-	    min  = tm->tm_min;
-	    sprintf(buf, "%02dh%02d", hour, min);
-	} else
-	    sprintf(buf, "00m00");
+	sprintf(buf, "00m00");
 	return buf;
     }
 
@@ -78,24 +70,14 @@ char *time_estimate(char *buf, const unsigned int dist)
 
     sec = (dist * 3600) / vmg;
 
-    if (show_abs) {
-	sec += gps_state.time;
-	tm = localtime(&sec);
+    min  = sec / 60;
+    sec -= min * 60;
+    hour = min / 60;
+    min -= hour * 60;
 
-	hour = tm->tm_hour;
-	min  = tm->tm_min;
-
-	sprintf(buf, "%02dh%02d", hour, min);
-    } else {
-	min  = sec / 60;
-	sec -= min * 60;
-	hour = min / 60;
-	min -= hour * 60;
-
-	if (hour >= 100) sprintf(buf, "**:**");
-	else if (hour)   sprintf(buf, "%02dh%02d", hour, min);
-	else	         sprintf(buf, "%02dm%02d", min, (int)sec);
-    }
+    if (hour >= 100) sprintf(buf, "**:**");
+    else if (hour)   sprintf(buf, "%02dh%02d", hour, min);
+    else	     sprintf(buf, "%02dm%02d", min, (int)sec);
 
     return buf;
 }
