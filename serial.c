@@ -178,9 +178,10 @@ void serial_poll()
 	    protocol->update(buf[i], &gps_state);
     }
 
-    /* only updated once a second, and then only when we actually have received
-     * anything from the receiver */
-    if (old_gps_time != gps_state.time && gps_state.updated)
+    /* only updated once a second except when we have no fix, as the time isn't
+     * updated in that case. And then only when we actually have received
+     * something from the receiver */
+    if ((!gps_state.fix || old_gps_time != gps_state.time) && gps_state.updated)
     {
 	gps_coord.lat = gps_state.lat;
 	gps_coord.lon = gps_state.lon;

@@ -410,15 +410,14 @@ void draw_sats(struct gps_state *gps)
 
 	vfdlib_drawText(screen, line, i * 8, VFD_HEIGHT - h0, 0, tshade);
 
-	if (gps->time - gps->sats[i].time <= 3) {
+	if (gps->time - gps->sats[i].time < 5)
 	    vfdlib_drawSolidRectangleClipped(screen, i * 8 + 1, height,
 					     i * 8 + 7, VFD_HEIGHT - h0 - 1,
 					     gshade);
-	} else {
+	else
 	    vfdlib_drawOutlineRectangleClipped(screen, i * 8 + 1, height,
 					       i * 8 + 7, VFD_HEIGHT - h0 - 1,
 					       gshade);
-	}
 
 	x = 108 + (12 * sin(gps->sats[i].azm) * cos(gps->sats[i].elv));
 	y = 12  + (12 * -cos(gps->sats[i].azm) * cos(gps->sats[i].elv));

@@ -157,8 +157,8 @@ static void tsip_46_health(struct gps_state *gps)
 static void tsip_47_sat_signals(struct gps_state *gps)
 {
     unsigned char count, svn;
-    float tmp;
-    int i, used, snr, time;
+    double tmp;
+    int i, used, snr;
 
     if (packet_idx < 2) return;
 
@@ -172,9 +172,8 @@ static void tsip_47_sat_signals(struct gps_state *gps)
 	tmp = Single(&packet[3 + 5 * i]);
 	used = (tmp > 0);
 	snr = (int)fabsf(tmp) / 2;
-	time = datestamp + timestamp;
 
-	new_sat(gps, svn, time, UNKNOWN_ELV, UNKNOWN_AZM, snr, used);
+	new_sat(gps, svn, UNKNOWN_TIME, UNKNOWN_ELV, UNKNOWN_AZM, snr, used);
     }
     if (count)
 	gps->updated = GPS_STATE_SIGNALS;
@@ -215,8 +214,8 @@ static void tsip_56_velocity(struct gps_state *gps)
 
 static void tsip_5C_sat_track_status(struct gps_state *gps)
 {
-    float elv, azm, tmp;
-    int time, used, snr;
+    double elv, azm, tmp;
+    int time, snr;
     unsigned char svn;
 
     if (packet_idx != 25) return;
@@ -224,13 +223,15 @@ static void tsip_5C_sat_track_status(struct gps_state *gps)
     svn = packet[1];
     /* attn. we get SNR both here and in tsip_47_sat_signals */
     tmp = Single(&packet[5]);
-    used = (tmp > 0);
+    /* used = (tmp > 0); * although the documentation says this field is
+       identical to the snr field in packet 0x47, I'm not all too sure it
+       actually has the same 'negative == no lock' semantics */
     snr = (int)fabsf(tmp) / 2;
     time = datestamp + (int)Single(&packet[9]);
     elv = Single(&packet[13]);
     azm = Single(&packet[17]);
 
-    new_sat(gps, svn, time, elv, azm, snr, used);
+    new_sat(gps, svn, time, elv, azm, snr, UNKNOWN_USED);
     gps->updated |= GPS_STATE_SATS;
 }
 
