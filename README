@@ -146,11 +146,21 @@ official empeg software. In-depth instructions can be found on the
 wonderful "Unofficial Empeg/RioCar BBS" (http://empeg.comms.net/).
 
 However those instructions typically involve installing empeg-preinit
-with some additional scripts to get /programs0 mounted. It might be
-possible to do this without empeg-preinit by adding the following to
-config.ini before any other ;@EXEC lines.
+with some additional scripts to get /programs0 mounted. It is possible
+to do this without empeg-preinit by adding the following to config.ini
+before any other ;@EXEC lines.
 
     ;@EXEC_ONCE /sbin/mount -oro -text2 /mnt/hda2 /programs0
 
-caveat, I haven't tried this myself.
+
+gpsapp will try to open a connection to a local gpsd daemon. Normally
+the loopback interface is not configured (and there is no gpsd running)
+so it will automatically fall back on reading directly from the serial
+port. If you want to run with gpsd, get an up-to-date gpsd (dbrashear
+often posts new binaries on the empeg.comms.net BBS). Copy mini_ifconfig
+and gpsd to the empeg and something like these EXEC_ONCE commands before
+gpsapp is started.
+
+    ;@EXEC_ONCE /programs0/mini_ifconfig
+    ;@EXEC_ONCE /programs0/gpsd
 

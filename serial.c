@@ -18,12 +18,7 @@
 #define POLL_INTERVAL 5
 #define UPDATE_INTERVAL 1
 
-#ifdef __arm__
 #define SERIALDEV "/dev/ttyS1"
-#else
-#define SERIALDEV "/dev/ttyUSB0"
-#endif
-
 #define GPSD_PORT 2947
 
 int serialfd = -1;
@@ -53,38 +48,37 @@ void serial_protocol(char *proto)
 	    break;
 }
 
-#ifndef __arm__
-/* this doesn't work, the empeg doesn't have a loopback interface */
 static int gpsd_open(void)
 {
     struct sockaddr_in sin;
-    int ret, flag = 1;
+    int fd, ret, flag = 1;
     
-    serialfd = socket(PF_INET, SOCK_STREAM, 0);
-    if (serialfd == -1)
+    fd = socket(PF_INET, SOCK_STREAM, 0);
+    if (fd == -1)
 	return -1;
 
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     sin.sin_port = htons(GPSD_PORT);
 
-    ret = connect(serialfd, (struct sockaddr *)&sin, sizeof(sin));
+    ret = connect(fd, (struct sockaddr *)&sin, sizeof(sin));
     if (ret == -1) {
-	close(serialfd);
-	serialfd = -1;
+	close(fd);
 	return -1;
     }
 
-    setsockopt(serialfd, SOL_TCP, TCP_NODELAY, &flag, sizeof(flag));
-    //fcntl(serialfd, F_SETFL, O_NONBLOCK);
+    setsockopt(fd, SOL_TCP, TCP_NODELAY, &flag, sizeof(flag));
+    //fcntl(fd, F_SETFL, O_NONBLOCK);
 
-    write(serialfd, "R", 1);
+    /* Tell gpsd to output raw NMEA sentences */
+    write(fd, "R", 1);
+
     /* drop back to NMEA, because that is what gpsd is actually spitting out */
+    serialfd = fd;
     serial_protocol("NMEA");
 
     return 0;
 }
-#endif
 
 void serial_open(void)
 {
@@ -95,11 +89,11 @@ void serial_open(void)
     if (serialfd != -1)
 	serial_close();
 
-#ifndef __arm__
+    /* try to open a socket to the gpsd daemon */
     ret = gpsd_open();
     if (ret != -1) goto exit;
-#endif
 
+    /* if that failed, try to open the serial port direcly */
     if (!protocol) {
 	err("Unknown protocol, using NMEA");
 	serial_protocol("NMEA");
