@@ -466,7 +466,7 @@ void draw_sats(struct gps_state *gps)
     strcat(line, "/h");
     w0 = vfdlib_getTextWidth(line, 0);
     vfdlib_drawText(screen, line, 96-w0, 2*h0, 0,
-		    gps_state.fix == 0x1 ? -1 : VFDSHADE_MEDIUM);
+		    gps_state.fix & 0x1 ? -1 : VFDSHADE_MEDIUM);
 
     /* show HDOP */
     if (gps_state.hdop < 100.0)
