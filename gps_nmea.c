@@ -354,7 +354,9 @@ restart:
 
 static void nmea_init(void)
 {
-  serial_send("$PMOTG,VTG,0001\r\n", 17);
+  serial_send("$PMOTG,RMC,0001\r\n", 17);
+  serial_send("$PMOTG,GSA,0001\r\n", 17);
+  serial_send("$PMOTG,GSV,0001\r\n", 17);
 }
 
 REGISTER_PROTOCOL("NMEA", 4800, 'N', nmea_init, NULL, nmea_update);
