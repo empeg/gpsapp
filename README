@@ -85,9 +85,9 @@ Installation
   o metric=[true|false]           
     select meters if true, miles if false
   o gpscoords=[true|false]        
-    show latitude and longitude if true
-  o rubberband=[true|false]       
-    highlight route to next waypoint if true
+    show latitude and longitude on the map screen if true
+  o coord_format=[DDD|DMM|DMS]
+    coordinate format
   o track=[true|false]            
     display previously traversed track if true
   o scale=[true|false]            
