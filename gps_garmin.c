@@ -47,6 +47,19 @@ static void garmin_send_nack(void)
     garmin_send(NACK, &packet[0], 1);
 }
 
+static double garmin_double(char *p)
+{
+    union { char c[8]; double v; } u;
+#ifdef __arm__ /* arm uses a different representation for doubles */
+    u.c[0] = p[4]; u.c[1] = p[5]; u.c[2] = p[6]; u.c[3] = p[7];
+    u.c[4] = p[0]; u.c[5] = p[1]; u.c[6] = p[2]; u.c[7] = p[3];
+#else
+    u.c[0] = p[0]; u.c[1] = p[1]; u.c[2] = p[2]; u.c[3] = p[3];
+    u.c[4] = p[4]; u.c[5] = p[5]; u.c[6] = p[6]; u.c[7] = p[7];
+#endif
+    return u.v;
+}
+
 static int garmin_r33pvt_data(struct gps_state *gps)
 {
     if (packet_idx != 67)
@@ -55,10 +68,10 @@ static int garmin_r33pvt_data(struct gps_state *gps)
     /* difference between UNIX and Garmin time which starts 1/1/1990? */
 #define EPOCHDIFF 631065600
     gps->time = *(int *)&packet[62] * 86400 + EPOCHDIFF +
-	*(double *)&packet[20] - *(short *)&packet[60];
+	garmin_double(&packet[20]) - *(short *)&packet[60];
 
-    gps->lat       = *(double *)&packet[28];
-    gps->lon       = *(double *)&packet[36];
+    gps->lat       = garmin_double(&packet[28]);
+    gps->lon       = garmin_double(&packet[36]);
     gps->spd_east  = *(float *)&packet[44];
     gps->spd_north = *(float *)&packet[48];
     gps->spd_up    = *(float *)&packet[52];

@@ -16,7 +16,16 @@ extern unsigned char packet[MAX_PACKET_SIZE];
 extern int packet_idx;
 void serial_send(char *buf, int len);
 
-/* results filled in by the decoding protocols */
+/* structure to be filled in by the decoding protocols */
+#define MAX_TRACKED_SATS 12
+struct gps_sat {
+    int   svn;  /* satellite identifier (set to 0 when this slot is unused) */
+    int   used; /* set when satellite is used in the fix */
+    float snr;  /* signal to noise ratio, dB */
+    float elv;  /* elevation above horizon in radians */
+    float azm;  /* azimuth from true north in radians */
+};
+
 struct gps_state {
     time_t  time;	/* GPS time translated to unix time */
     double  lat;	/* latitude in radians */
@@ -25,6 +34,8 @@ struct gps_state {
     double  spd_east;   /* meters per hour */
     double  spd_north;  /* meters per hour */
     double  spd_up;     /* meters per hour */
+
+    struct gps_sat sats[MAX_TRACKED_SATS];
 };
 
 struct gps_protocol {

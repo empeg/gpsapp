@@ -1,3 +1,15 @@
+Changes in v0.9
+
+ * Added a satellite signal view, seems to work for both TSIP and NMEA.
+   Can not be used in either Garmin or TAIP because those protocols don't seem
+   to support getting satellite signal and track information.
+ * Fixed decoding of doubles for Garmin protocol.
+ * Added simple 'incar' executable, exits with a 'true' value whenever we're
+   in dc-mode. Can be used in preinit scripts.
+ * Shortened the error message timeout to 1 second, got impatient.
+ * Opening serial non-blocking and set it to blocking after we configure it.
+ * Explicitly flushing serial output before closing the port.
+
 Changes in v0.8
 
  * Fixed TSIP protocol decoding, it turned out that ARM doubles are IEEE

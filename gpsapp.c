@@ -13,7 +13,11 @@
 #include "vfdlib.h"
 #include "gpsapp.h"
 
-int visual	    = 1;
+enum {
+    VIEW_SATS = 0,
+    VIEW_MAP,
+    VIEW_ROUTE,
+} visual;
 int show_metric     = 0;
 int show_gpscoords  = 0;
 int show_rubberband = 1;
@@ -56,13 +60,18 @@ void timesub(struct timeval *from, struct timeval *val)
 
 static void refresh_display(void)
 {
+    struct xy pos;
+    int i;
+
     do_refresh = 0;
 
     draw_clear();
-    if (visual) {
-	struct xy pos;
-	int i;
+    switch (visual) {
+    case VIEW_SATS:
+	draw_sats(&gps_state);
+	break;
 
+    case VIEW_MAP:
 	/* show map scale */
 	if (show_scale)
 	    draw_scale();
@@ -97,8 +106,12 @@ static void refresh_display(void)
 
 	vfdlib_setClipArea(0, 0, VFD_WIDTH, VFD_HEIGHT);
 	draw_info();
-    } else
+	break;
+
+    case VIEW_ROUTE:
 	draw_wpstext();
+	break;
+    }
 
     if (load_route)
 	routes_list();
@@ -149,16 +162,28 @@ static int handle_input(void)
 	gettimeofday(&released, NULL);
 	timesub(&released, &pressed);
 	/* LONG_PRESS? */
-	if (released.tv_sec >= 1 || released.tv_usec > 500000)
-	    visual = 1 - visual;
+	if (released.tv_sec >= 1 || released.tv_usec > 500000) {
+	    switch (visual) {
+	    case VIEW_SATS:  visual = VIEW_MAP; break;
+	    case VIEW_MAP:   visual = VIEW_ROUTE; break;
+	    case VIEW_ROUTE: visual = VIEW_SATS; break;
+	    }
+	}
 	else if (load_route) {
 	    route_load();
 	    load_route = 0;
 	    menu = 0;
-	} else if (menu) {
+	}
+	else if (menu) {
 	    switch(menu_pos) {
 	    case 0: load_route = routes_init(); break;
-	    case 1: visual = 1 - visual; break;
+	    case 1:
+		switch (visual) {
+		case VIEW_SATS:  visual = VIEW_MAP; break;
+		case VIEW_MAP:   visual = VIEW_ROUTE; break;
+		case VIEW_ROUTE: visual = VIEW_SATS; break;
+		}
+		break;
 	    case 2: show_popups = 1 -  show_popups; break;
 	    case 3: show_metric = 1 - show_metric; break;
 	    case 4: show_gpscoords = 1 - show_gpscoords;  break;
@@ -167,7 +192,8 @@ static int handle_input(void)
 	    case 7: show_track = 1 - show_track; break;
 	    }
 	    menu = 0;
-	} else
+	}
+	else
 	    menu = 1;
 
 	do_refresh = 1;
@@ -180,7 +206,7 @@ static int handle_input(void)
 	    if (--menu_pos < 0)
 		menu_pos = MENU_ENTRIES - 1;
 	}
-	else if (visual)
+	else if (visual == VIEW_MAP)
 	    draw_zoom(0);
 	do_refresh = 1;
 	break;
@@ -192,7 +218,7 @@ static int handle_input(void)
 	    if (++menu_pos >= MENU_ENTRIES)
 		menu_pos = 0;
 	}
-	else if (visual)
+	else if (visual == VIEW_MAP)
 	    draw_zoom(1);
 	do_refresh = 1;
 	break;

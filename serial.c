@@ -71,7 +71,7 @@ static int gpsd_open(void)
     }
 
     setsockopt(serialfd, SOL_TCP, TCP_NODELAY, &flag, sizeof(flag));
-    fcntl(serialfd, F_SETFL, O_NONBLOCK);
+    //fcntl(serialfd, F_SETFL, O_NONBLOCK);
 
     /* drop back to NMEA, because that is what gpsd is actually spitting out */
     serial_protocol("NMEA");
@@ -82,7 +82,8 @@ static int gpsd_open(void)
 
 void serial_open(void)
 {
-    int ret = -1, spd, parity;
+    int ret = -1, parity;
+    speed_t spd;
     struct termios termios;
 
     if (serialfd != -1)
@@ -98,7 +99,7 @@ void serial_open(void)
 	serial_protocol("NMEA");
     }
 
-    serialfd = open(SERIALDEV, O_RDWR);
+    serialfd = open(SERIALDEV, O_NOCTTY | O_RDWR | O_NONBLOCK);
     if (serialfd == -1) goto exit;
 
     ret = tcgetattr(serialfd, &termios);
@@ -117,24 +118,22 @@ void serial_open(void)
     }
 
     termios.c_iflag = 0;
-    termios.c_oflag = ONLRET;
+    termios.c_oflag = 0; // ONLRET;
     termios.c_cflag = (CSIZE & CS8) | CREAD | CLOCAL | parity;
     termios.c_lflag = 0;
     cfsetispeed(&termios, spd);
     cfsetospeed(&termios, spd);
 
-    ret = tcsetattr(serialfd, TCSAFLUSH, &termios);
+    ret = tcsetattr(serialfd, TCSANOW, &termios);
     if (ret == -1) goto exit;
 
+    fcntl(serialfd, F_SETFL, O_RDWR | O_NOCTTY);
 exit:
     if (ret == -1) {
-	if (serialfd != -1) {
-	    close(serialfd);
-	    serialfd = -1;
-	}
+	serial_close();
 	err("Failed to set up serial port");
     }
-    if (protocol->init)
+    else if (protocol->init)
 	protocol->init();
 }
 
@@ -143,6 +142,7 @@ void serial_close(void)
     if (serialfd == -1)
 	return;
 
+    tcflush(serialfd, TCIOFLUSH);
     close(serialfd);
     serialfd = -1;
 }

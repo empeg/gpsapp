@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include "vfdlib.h"
 #include "empeg_ui.h"
+#include "gps_protocol.h"
 #include "gpsapp.h"
 
 #define MAX_X (VFD_WIDTH - VFD_HEIGHT)
@@ -197,9 +198,9 @@ void draw_scale(void)
 void draw_gpscoords(void)
 {
     char line[13];
-    sprintf(line, "%10.6f", radtodeg(gps_coord.lat));
+    sprintf(line, "%12.6f", radtodeg(gps_coord.lat));
     vfdlib_drawText(screen, line, 0, 0, 0, VFDSHADE_DIM);
-    sprintf(line, "%10.6f", radtodeg(gps_coord.lon));
+    sprintf(line, "%12.6f", radtodeg(gps_coord.lon));
     vfdlib_drawText(screen, line, 0, h0, 0, VFDSHADE_DIM);
 }
 
@@ -374,7 +375,41 @@ void err(char *msg)
 {
     draw_msg(msg);
     draw_display();
-    sleep(2);
+    sleep(1);
     draw_clear();
+}
+
+void draw_sats(struct gps_state *gps)
+{
+    char sat[3];
+    int i, height, x, y, data = 0;
+    int shade;
+
+    for (i = 0; i < MAX_TRACKED_SATS; i++) {
+	if (!gps->sats[i].svn) continue;
+
+	shade = gps->sats[i].used ? -1 : VFDSHADE_MEDIUM;
+
+	data = 1;
+	sprintf(sat, "%02d", gps->sats[i].svn);
+	height = 24 - (int)gps->sats[i].snr;
+
+	vfdlib_drawText(screen, sat, i * 8, VFD_HEIGHT - h0, 0, shade);
+	if (gps->sats[i].used)
+	    vfdlib_drawSolidRectangleClipped(screen, i * 8 + 1, height,
+					     i * 8 + 7, VFD_HEIGHT - h0 - 1,
+					     VFDSHADE_BRIGHT);
+	else
+	    vfdlib_drawOutlineRectangleClipped(screen, i * 8 + 1, height,
+					       i * 8 + 7, VFD_HEIGHT - h0 - 1,
+					       VFDSHADE_MEDIUM);
+
+	x = 108 + (12 * sin(gps->sats[i].azm) * cos(gps->sats[i].elv));
+	y = 12  + (12 * -cos(gps->sats[i].azm) * cos(gps->sats[i].elv));
+	vfdlib_drawText(screen, sat, x, y, 0, shade);
+    }
+
+    if (!data)
+	draw_msg("No satellite data");
 }
 

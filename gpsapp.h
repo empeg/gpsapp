@@ -75,6 +75,7 @@ void draw_wpstext(void);
 void draw_popup(char *text);
 void draw_display(void);
 void err(char *msg);
+void draw_sats(struct gps_state *gps);
 
 /* tracking functions (track.c) */
 void track_init(void);
