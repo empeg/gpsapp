@@ -10,10 +10,6 @@
 
 * Initial position in config.ini, Zodiac support.
 
-* Rotate map so that the top is in the direction we're driving. Have to
-  transform all coordinates, maybe too CPU intensive? Also we have fewer
-  pixels in that direction.
-
 * Use the bearing pointer as a compass when no route is loaded.
   (Need a way to discard the current route then...)
 

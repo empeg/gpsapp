@@ -18,14 +18,6 @@ gpsapp: ${gpsapp_OBJS}
 	$(CC) -o $@ $^ $(LDLIBS)
 	-$(STRIP) $@
 
-hack_init: ${hack_init_OBJS}
-	$(CC) -o $@ $^
-	-$(STRIP) $@
-
-incar: ${incar_OBJS}
-	$(CC) -o $@ $^
-	-$(STRIP) $@
-
 %_host.o : %.c
 	$(HOSTCC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
@@ -36,6 +28,5 @@ clean: dist
 	-rm -f gpsapp hack_init incar
 
 dist:
-	-rm -f gpsapp_host ${gpsapp_host_OBJS} ${gpsapp_OBJS} ${hack_init_OBJS}
-	-rm -f ${incar_OBJS} *.orig
+	-rm -f gpsapp_host ${gpsapp_host_OBJS} ${gpsapp_OBJS} *.orig
 
