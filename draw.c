@@ -206,7 +206,7 @@ void draw_gpscoords(void)
 
 void draw_info(void)
 {
-    char *desc, buf[10];
+    char *desc, buf[60];
     unsigned int dist;
     int center_x, center_y, tip_x, tip_y, b;
     struct xy pos;
@@ -224,6 +224,11 @@ void draw_info(void)
 			0, 0, -1);
     }
 
+    formatdist(buf, gps_speed, 0);
+    strcat(buf, "/h");
+    vfdlib_drawText(screen, buf, VFD_WIDTH - vfdlib_getTextWidth(buf, 0) + 1,
+		    VFD_HEIGHT + 1 - h0, 0, -1);
+
     if (!route_getwp(nextwp, &pos, &dist, &desc)) {
 	draw_popup(NULL);
 	return;
@@ -231,10 +236,10 @@ void draw_info(void)
 
     if (show_time) time_estimate(buf, dist);
     else	   formatdist(buf, dist, 0);
-    vfdlib_drawText(screen, buf, VFD_WIDTH - vfdlib_getTextWidth(buf, 0)+1,
-		    VFD_HEIGHT + 1 - h0, 0, -1);
+    strcat(buf, " ");
+    strcat(buf, desc);
 
-    draw_popup(show_popups && (dist < 1000 || show_popups == 2) ? desc : NULL);
+    draw_popup(show_popups && (dist < 1000 || show_popups == 2) ? buf : NULL);
 
     /* draw pointer */
     b = radtodeg(bearing(&gps_coord.xy, &pos)) - gps_bearing;
