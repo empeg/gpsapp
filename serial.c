@@ -14,6 +14,9 @@
 #include <string.h>
 #include "gpsapp.h"
 
+/* If the protocol has a polling function, we call it once every 5 seconds */
+#define POLL_INTERVAL 5
+
 #ifdef __arm__
 #define SERIALDEV "/dev/ttyS1"
 #else
@@ -157,8 +160,9 @@ static int serial_avail(void)
 
 void serial_poll()
 {
+    static time_t poll_stamp;
     char buf[16];
-    int n, i, new = 0;
+    int n, i;
 
     if (serialfd == -1)
 	return;
@@ -168,10 +172,10 @@ void serial_poll()
 	if (n <= 0) break;
 
 	for (i = 0; i < n; i++)
-	    new += protocol->update(buf[i], &gps_state);
+	    protocol->update(buf[i], &gps_state);
     }
 
-    if (new) {
+    if (gps_state.updated) {
 	gps_coord.lat = gps_state.lat;
 	gps_coord.lon = gps_state.lon;
 
@@ -194,7 +198,13 @@ void serial_poll()
 	if (gps_speed >= 2000)
 	    route_update_vmg();
 
+	gps_state.updated = 0;
 	do_refresh = 1;
+    }
+
+    if (protocol->poll && poll_stamp + POLL_INTERVAL < time(NULL)) {
+	protocol->poll();
+	poll_stamp = time(NULL);
     }
 }
 

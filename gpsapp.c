@@ -100,8 +100,10 @@ static void refresh_display(void)
 
 	    /* add focus to next waypoint */
 	    draw_mark(&pos, -1, VFDSHADE_MEDIUM);
+#if 0
 	    if (show_rubberband)
-		draw_line(&gps_coord.xy, &pos, VFDSHADE_BRIGHT);
+	    	draw_line(&gps_coord.xy, &pos, VFDSHADE_BRIGHT);
+#endif
 	}
 
 	/* draw our own location */
@@ -125,7 +127,12 @@ static void refresh_display(void)
 	char *msg=NULL;
 	lastmenu--;
 	switch(menu_pos) {
-	case 2: msg = (show_popups?"Popups":"No Popups"); break;
+	case 2: switch (show_popups) {
+		case 0: msg = "No Popups"; break;
+		case 1: msg = "Popups"; break;
+		case 2: msg = "Permanent Popups"; break;
+		}
+		break;
 	case 3: msg = (show_metric?"Meters":"Miles"); break;
 	case 4: msg = (show_gpscoords?"Coordinates":"No Coordinates"); break;
 	case 5: msg = (show_rubberband?"Rubberband":"No Rubberband"); break;
@@ -218,7 +225,10 @@ static int handle_input(void)
 		case VIEW_ROUTE: visual = VIEW_SATS; break;
 		}
 		break;
-	    case 2: show_popups = 1 -  show_popups; break;
+	    case 2:
+		if (++show_popups == 3)
+		    show_popups = 0;
+		break;
 	    case 3: show_metric = 1 - show_metric; break;
 	    case 4: show_gpscoords = 1 - show_gpscoords;  break;
 	    case 5: show_rubberband = 1 - show_rubberband; break;
@@ -268,12 +278,8 @@ static int handle_input(void)
 	break;
 
     case IR_KNOB_LEFT:
-	route_skipwp(-1);
-	do_refresh = 1;
-	break;
-
     case IR_KNOB_RIGHT:
-	route_skipwp(1);
+	route_skipwp(key == IR_KNOB_LEFT ? -1 : 1);
 	route_locate();
 	do_refresh = 1;
 	break;

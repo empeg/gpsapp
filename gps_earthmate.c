@@ -26,7 +26,7 @@ static int INT32(unsigned char *p)
     return ((p[3] << 24) | (p[2] << 16) | (p[1] << 8) | p[0]);
 }
 
-static int em_1000geodpos(struct gps_state *gps)
+static void em_1000geodpos(struct gps_state *gps)
 {
     double speed;
     int bearing;
@@ -34,6 +34,9 @@ static int em_1000geodpos(struct gps_state *gps)
     gps->lon = radtodeg(INT32(&packet[WD(28)]) * 1.0e-8);
     speed = ((unsigned int)INT32(&packet[WD(34)])) * 1.0e-2;
     bearing = INT16(&packet[WD(36)]) * 1.0e-3;
+
+    if (bearing < 0) bearing += 2 * M_PI;
+
     gps->bearing = radtodeg(bearing);
     gps->spd_up = 0.0;
     gps->spd_east  = sin(bearing) * speed;
@@ -43,16 +46,16 @@ static int em_1000geodpos(struct gps_state *gps)
 	INT16(&packet[WD(24)])+(60*INT16(&packet[WD(23)])) +
 	(3600*INT16(&packet[WD(22)]));
 
-    return 1;
+    gps->updated |= GPS_STATE_COORD | GPS_STATE_BEARING | GPS_STATE_SPEED;
 }
 
-static int em_1002chsum(struct gps_state *gps)
+static void em_1002chsum(struct gps_state *gps)
 {
     int j, status, svn, snr, used, valid;
     int timestamp, datestamp, time;
 
 #define EPOCHDIFF 315532800 /* difference between GPS and UNIX time */
-#define LEAP_SECONDS 13
+#define LEAP_SECONDS 13 /* hardcoded, bad me, should get it from the receiver */
     datestamp = INT16(&packet[WD(10)]) * 7 * 86400 + EPOCHDIFF;
     timestamp = INT32(&packet[WD(11)]) + LEAP_SECONDS;
     time = datestamp + timestamp;
@@ -68,30 +71,32 @@ static int em_1002chsum(struct gps_state *gps)
 		snr, used);
     }
 
-    return 1;
+    gps->updated = GPS_STATE_SIGNALS;
 }
 
-static int em_1003sats(struct gps_state *gps)
+static void em_1003sats(struct gps_state *gps)
 {
     double elv, azm;
-    int j, svn;
-    
-    for (j = 0; j < INT16(&packet[WD(14)]); j++) {
+    int j, svn, nsats = INT16(&packet[WD(14)]);
+
+    for (j = 0; j < nsats; j++) {
 	svn = INT16(&packet[WD(15 + (3 * j))]);
 	elv = INT16(&packet[WD(17 + (3 * j))]) * 1.0e-4;
 	azm = INT16(&packet[WD(16 + (3 * j))]) * 1.0e-4;
 
+	if (elv < 0) elv = 0;
+	if (azm < 0) azm += 2 * M_PI;
+
 	new_sat(gps, svn, UNKNOWN_TIME, elv, azm, UNKNOWN_SNR, UNKNOWN_USED);
     }
 
-    return 1;
+    if (nsats)
+	gps->updated = GPS_STATE_SATS;
 }
 
-static int em_decode(struct gps_state *gps)
+static void em_decode(struct gps_state *gps)
 {
-    int upd = 0;
-
-    if (packet_idx < 1) return 0;
+    if (packet_idx < 1) return;
 
 #ifndef __arm__
     fprintf(stderr, "receiving %x\n", packet[0]);
@@ -102,23 +107,21 @@ static int em_decode(struct gps_state *gps)
         /* recognize earthmate's 'EARTHA' message */
         if (packet_idx >= 6 && memcmp(packet, "EARTHA", 6) == 0)
             serial_send("EARTHA\r\n", 8);
-        return 0;
+        return;
     }
 
     /* verify checksum XXX */
 
     switch(INT16(&packet[0])) {
-    case 1000: upd = em_1000geodpos(gps); break;
-    case 1002: upd = em_1002chsum(gps); break;
-    case 1003: upd = em_1003sats(gps); break;
+    case 1000: em_1000geodpos(gps); break;
+    case 1002: em_1002chsum(gps); break;
+    case 1003: em_1003sats(gps); break;
     }
-
-    return upd;
 }
 
-static int em_update(char c, struct gps_state *gps)
+static void em_update(char c, struct gps_state *gps)
 {
-    static int dles, upd = 0, eartha = 0;
+    static int dles, eartha = 0;
 
     if ((unsigned char)c == DLE) {
 	eartha = 0; /* should never see this when expecting EARTHA */
@@ -128,7 +131,7 @@ static int em_update(char c, struct gps_state *gps)
     }
 
     /* still waiting for start of packet... */
-    if (!dles) return 0;
+    if (!dles) return;
 
     /* We should never see dle or etx as the id */
     if (!packet_idx && (unsigned char)c == ETX)
@@ -143,12 +146,12 @@ static int em_update(char c, struct gps_state *gps)
     /* end of packet? */
     if ((packet_idx && (unsigned char)c == ETX) ||
 	(eartha == 1 && c == '\n')) {
-	upd = em_decode(gps);
+	em_decode(gps);
 
 restart:
 	packet_idx = 0;
 	dles = 0;
-	return upd;
+	return;
     }
 
     packet[packet_idx++] = c;
@@ -156,8 +159,7 @@ restart:
     /* discard long lines */
     if (packet_idx == MAX_PACKET_SIZE) 
 	goto restart;
-    return 0;
 }
 
-REGISTER_PROTOCOL("EARTHMATE", 9600, 'N', NULL, em_update);
+REGISTER_PROTOCOL("EARTHMATE", 9600, 'N', NULL, NULL, em_update);
 

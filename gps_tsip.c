@@ -13,29 +13,7 @@
 #define ETX 0x03
 
 static int datestamp, timestamp, sat_track_update;
-static double latitude, longtitude;
-static float spd_e, spd_n, spd_u;
-
 static int initialized, fix;
-
-static int update(struct gps_state *gps)
-{
-    gps->time      = datestamp + timestamp;
-    gps->lat       = latitude;
-    gps->lon       = longtitude;
-    gps->spd_east  = spd_e;
-    gps->spd_north = spd_n;
-    gps->spd_up    = spd_u;
-
-    if (!fix)
-	gps->bearing = -1;
-    else {
-	gps->bearing = radtodeg(atan2(spd_e, spd_n));
-	if (gps->bearing < 0) gps->bearing += 360;
-    }
-
-    return 1;
-}
 
 static short INT16(char *p)
 {
@@ -165,17 +143,17 @@ static void tsip_46_health(void)
 	tsip_27_req_signal_levels();
 }
 
-static int tsip_47_sat_signals(struct gps_state *gps)
+static void tsip_47_sat_signals(struct gps_state *gps)
 {
     unsigned char count, svn;
     float tmp;
     int i, used, snr, time;
 
-    if (packet_idx < 2) return 0;
+    if (packet_idx < 2) return;
 
     count = packet[1];
 
-    if (packet_idx != 2 + 5 * count) return 0;
+    if (packet_idx != 2 + 5 * count) return;
 
     for (i = 0; i < count; i++) {
 	svn = packet[2 + 5 * i];
@@ -186,6 +164,8 @@ static int tsip_47_sat_signals(struct gps_state *gps)
 
 	new_sat(gps, svn, time, UNKNOWN_ELV, UNKNOWN_AZM, snr, used);
     }
+    if (count)
+	gps->updated = GPS_STATE_SIGNALS;
 
     /* update satellite tracking status */
     if (datestamp + timestamp > sat_track_update)
@@ -197,8 +177,6 @@ static int tsip_47_sat_signals(struct gps_state *gps)
      * requests */
     if (!count)
 	tsip_27_req_signal_levels();
-
-    return 1;
 }
 
 static void tsip_55_io_options(void)
@@ -217,12 +195,11 @@ static void tsip_55_io_options(void)
 	tsip_35_set_io_options(out);
 }
 
-static int tsip_56_velocity(struct gps_state *gps)
+static void tsip_56_velocity(struct gps_state *gps)
 {
     float east, north, up, bias, time;
-    int upd = 0;
 
-    if (packet_idx != 21) return 0;
+    if (packet_idx != 21) return;
 
     east  = Single(&packet[1]);
     north = Single(&packet[5]);
@@ -230,16 +207,17 @@ static int tsip_56_velocity(struct gps_state *gps)
     bias  = Single(&packet[13]);
     time  = Single(&packet[17]);
 
-    if (time != timestamp) {
-	upd = update(gps);
-	timestamp = time;
-    }
+    timestamp = (int)time;
 
-    spd_e = east;
-    spd_n = north;
-    spd_u = up;
+    gps->time = timestamp + datestamp;
+    gps->spd_east = east;
+    gps->spd_north = north;
+    gps->spd_up = up;
 
-    return upd;
+    gps->bearing = radtodeg(atan2(east, north));
+    if (gps->bearing < 0) gps->bearing += 360;
+
+    gps->updated |= GPS_STATE_SPEED | GPS_STATE_BEARING;
 }
 
 static void tsip_5C_sat_track_status(struct gps_state *gps)
@@ -257,6 +235,7 @@ static void tsip_5C_sat_track_status(struct gps_state *gps)
     azm = Single(&packet[17]);
 
     new_sat(gps, svn, time, elv, azm, UNKNOWN_SNR, UNKNOWN_USED);
+    gps->updated |= GPS_STATE_SATS;
 }
 
 static void tsip_82_dgps_fix(void)
@@ -274,13 +253,12 @@ static void tsip_82_dgps_fix(void)
     }
 }
 
-static int tsip_84_position(struct gps_state *gps)
+static void tsip_84_position(struct gps_state *gps)
 {
     double lat, lon, alt, bias;
     float time;
-    int upd = 0;
 
-    if (packet_idx != 37) return 0;
+    if (packet_idx != 37) return;
 
     lat  = Double(&packet[1]);
     lon  = Double(&packet[9]);
@@ -288,24 +266,19 @@ static int tsip_84_position(struct gps_state *gps)
     bias = Double(&packet[25]);
     time = Single(&packet[33]);
 
-    if (time != timestamp) {
-	upd = update(gps);
-	timestamp = time;
-    }
+    timestamp = (int)time;
 
-    latitude   = lat;
-    longtitude = lon;
+    gps->time = timestamp + datestamp;
+    gps->lat = lat;
+    gps->lon = lon;
+    gps->updated |= GPS_STATE_COORD;
 
     tsip_27_req_signal_levels();
-
-    return upd;
 }
 
-static int tsip_decode(struct gps_state *gps)
+static void tsip_decode(struct gps_state *gps)
 {
-    int upd = 0;
-
-    if (packet_idx < 1) return 0;
+    if (packet_idx < 1) return;
 
 #ifndef __arm__
     fprintf(stderr, "receiving %x\n", packet[0]);
@@ -315,15 +288,15 @@ static int tsip_decode(struct gps_state *gps)
     case 0x41: tsip_41_time(); break;
     case 0x45: tsip_45_version(); break;
     case 0x46: tsip_46_health(); break;
-    case 0x47: upd = tsip_47_sat_signals(gps); break;
+    case 0x47: tsip_47_sat_signals(gps); break;
     case 0x55: tsip_55_io_options(); break;
-    case 0x56: upd = tsip_56_velocity(gps); break;
+    case 0x56: tsip_56_velocity(gps); break;
     case 0x5C: tsip_5C_sat_track_status(gps); break;
     case 0x82: tsip_82_dgps_fix(); break;
-    case 0x84: upd = tsip_84_position(gps); break;
+    case 0x84: tsip_84_position(gps); break;
     }
 
-    return upd;
+    return;
 }
 
 static void tsip_init(void)
@@ -340,24 +313,24 @@ static void tsip_init(void)
     tsip_82_dgps_fix();
 }
 
-static int tsip_update(char c, struct gps_state *gps)
+static void tsip_update(char c, struct gps_state *gps)
 {
-    static int dles, dle_escape, upd = 0;
+    static int dles, dle_escape;
 
     if (c == DLE) {
-	if (++dles == 1) return 0; /* start of packet */
+	if (++dles == 1) return; /* start of packet */
 	if (!packet_idx && dles == 2)
 	    goto restart;
 
 	/* <dle> inside a packet should be doubled so we drop some */
 	if (!dle_escape) {
 	    dle_escape = 1;
-	    return 0;
+	    return;
 	}
     }
 
     /* still waiting for start of packet... */
-    if (!dles) return 0;
+    if (!dles) return;
 
     /* We should never see dle or etx as the id */
     if (!packet_idx && c == ETX)
@@ -365,13 +338,13 @@ static int tsip_update(char c, struct gps_state *gps)
 
     /* end of packet? */
     if (dle_escape && c == ETX) {
-	upd = tsip_decode(gps);
+	tsip_decode(gps);
 
 restart:
 	packet_idx = 0;
 	dle_escape = 0;
 	dles = 0;
-	return upd;
+	return;
     }
     dle_escape = 0;
 
@@ -380,8 +353,7 @@ restart:
     /* discard long lines */
     if (packet_idx == MAX_PACKET_SIZE)
 	goto restart;
-    return 0;
 }
 
-REGISTER_PROTOCOL("TSIP", 9600, 'O', tsip_init, tsip_update);
+REGISTER_PROTOCOL("TSIP", 9600, 'O', tsip_init, NULL, tsip_update);
 

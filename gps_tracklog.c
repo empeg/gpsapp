@@ -53,7 +53,7 @@ void tracklog_init(void)
     gps_state.time = prev.time;
 }
 
-int tracklog_update(char c, struct gps_state *gps)
+void tracklog_update(char c, struct gps_state *gps)
 {
     struct state cur;
     long offset;
@@ -68,7 +68,7 @@ int tracklog_update(char c, struct gps_state *gps)
 next:
     offset = ftell(track);
     if (!tracklog_read(&cur))
-	return 0;
+	return;
 
     if (gps->time >= cur.time) {
 	prev = cur;
@@ -81,6 +81,7 @@ next:
 
     gps->lat = degtorad(dlat * ratio + prev.lat);
     gps->lon = degtorad(dlon * ratio + prev.lon);
+    gps->updated |= GPS_STATE_COORD;
 
     gps_coord.lat = gps->lat;
     gps_coord.lon = gps->lon;
@@ -88,6 +89,7 @@ next:
 
     gps->bearing = radtodeg(atan2(dlon, dlat));
     if (gps->bearing < 0) gps->bearing += 360;
+    gps->updated |= GPS_STATE_BEARING;
 
     gps->spd_east  = gps_coord.xy.x - last.x;
     gps->spd_north = gps_coord.xy.y - last.y;
@@ -95,12 +97,11 @@ next:
 
     if (abs(gps->spd_east)  > 1e6) gps->spd_east = 0;
     if (abs(gps->spd_north) > 1e6) gps->spd_north = 0;
+    gps->updated |= GPS_STATE_SPEED;
 
     last = gps_coord.xy;
     fseek(track, offset, SEEK_SET);
-
-    return 1;
 }
 
-REGISTER_PROTOCOL("TRACKLOG", 0, 'N', tracklog_init, tracklog_update);
+REGISTER_PROTOCOL("TRACKLOG", 0, 'N', tracklog_init, NULL, tracklog_update);
 

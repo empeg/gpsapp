@@ -16,6 +16,9 @@ Changes in v0.11
  * More useful patches from Derrick, parsing config.ini for default options.
    Showing what state we toggled a menu entry to once it is selected.
    Sending Motorola Oncore init sentence to enable VTG logging.
+ * Added a 'permanent' setting for popup descriptions.
+ * Went with tfabris's suggestion and changed rubberband so that it highlights
+   the next section of the route.
 
 Changes in v0.10
 

@@ -241,44 +241,36 @@ void route_update_vmg(void)
 
 void route_skipwp(int dir)
 {
+    int prev;
     nextwp += dir;
 
     if (nextwp >= route.nwps)
 	nextwp = route.nwps-1;
     if (nextwp < 0)
 	nextwp = 0;
+
+    prev = nextwp - 1;
+    if (prev >= 0 && prev < route.nwps)
+	minidx = route.wps[prev].idx;
 }
 
 void route_locate(void)
 {
-    int idx, incr;
+    int idx;
     long long mindist, dist;
 
-    /* don't try to be smart, just search based on the current nextwp */
     if (nextwp >= route.nwps) return;
-    minidx = route.wps[nextwp].idx;
+
+    /* don't try to be smart, just search based on the current nextwp */
+    if (minidx >= route.npts)
+	minidx = 0;
     mindist = distance2(&gps_coord.xy, &route.pts[minidx]);
 
-    /* If we are travelling towards this waypoint check points before this
-     * one. Otherwise check all points towards the next wp */
-    idx = minidx;
-    if (towards(&gps_coord.xy, &route.pts[minidx], gps_bearing))
-	incr = -1;
-    else
-	incr = 1;
-
-    while(1) {
-	idx += incr;
-	if (idx < 0 || idx >= route.npts)
-	    break;
-
-	if (nextwp < route.nwps-1 && idx > route.wps[nextwp+1].idx)
+    for (idx = minidx; idx < route.npts; idx++) {
+	if (nextwp < route.nwps-1 && idx >= route.wps[nextwp].idx+1)
 	    break;
 
 	dist = distance2(&gps_coord.xy, &route.pts[idx]);
-	if (dist > 2 * mindist)
-	    break;
-
 	if (dist > mindist)
 	    continue;
 
@@ -289,11 +281,22 @@ void route_locate(void)
     /* ok we're really close now */
     /* did we pass the point we just found? */
     if (minidx+1 < route.npts-1) {
+#if 0
 	if (!towards(&gps_coord.xy, &route.pts[minidx], gps_bearing) &&
 	    towards(&gps_coord.xy, &route.pts[minidx+1], gps_bearing)) {
 	    minidx++;
 	    mindist = distance2(&gps_coord.xy, &route.pts[minidx]);
 	}
+#else
+	if (!towards(&gps_coord.xy, &route.pts[minidx], gps_bearing) &&
+	    minidx + 1 < route.npts) {
+	    dist = distance2(&gps_coord.xy, &route.pts[minidx + 1]);
+	    if (dist < mindist) {
+		minidx++;
+		mindist = dist;
+	    }
+	}
+#endif
     }
 
     while (minidx > route.wps[nextwp].idx)
@@ -305,13 +308,15 @@ void route_locate(void)
 
 void route_draw(struct xy *cur_pos)
 {
-    draw_lines(route.pts, route.npts, VFDSHADE_MEDIUM);
-
-#if 0
-    /* draw line to chosen closest point, probably too much clutter */
-    if (minidx < route.npts)
-	draw_line(cur_pos, &route.pts[minidx], VFDSHADE_MEDIUM);
-#endif
+    if (show_rubberband && minidx < route.npts && nextwp < route.nwps) {
+	int nextidx = route.wps[nextwp].idx;
+	draw_lines(route.pts, minidx, VFDSHADE_MEDIUM);
+	draw_line(cur_pos, &route.pts[minidx], VFDSHADE_BRIGHT);
+	if (nextidx != minidx)
+	    draw_lines(&route.pts[minidx], nextidx - minidx, VFDSHADE_BRIGHT);
+	draw_lines(&route.pts[nextidx], route.npts - nextidx, VFDSHADE_MEDIUM);
+    } else
+	draw_lines(route.pts, route.npts, VFDSHADE_MEDIUM);
 }
 
 int route_getwp(const int wp, struct xy *pos, unsigned int *dist, char **desc)
@@ -355,8 +360,10 @@ int route_getwp(const int wp, struct xy *pos, unsigned int *dist, char **desc)
 	    char *heading, *strong;
 
 	    if (idx == minidx)
-		 inhdg = bearing(&gps_coord.xy, &route.pts[idx]);
-	    else inhdg = route.wps[wpidx].inhdg;
+		//inhdg = bearing(&gps_coord.xy, &route.pts[idx]);
+		inhdg = gps_bearing;
+	    else
+		inhdg = route.wps[wpidx].inhdg;
 
 	    outhdg = route.wps[wpidx].outhdg;
 	    turn = outhdg - inhdg;

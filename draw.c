@@ -93,7 +93,7 @@ void draw_lines(const struct xy *pts, const int npts, const int shade)
     }
 }
 
-#if 0
+#if 0 /* small 7x7 cursor */
 static unsigned char *cursors[] = {
     /*?*/  "\x00\x00\x07\x00\x07\x00\x10\x38\x6c\x38\x10\x00",
     /*N*/  "\x00\x00\x07\x00\x07\x10\x38\x38\x6c\x7c\x00\x00",
@@ -114,7 +114,7 @@ static unsigned char *cursors[] = {
     /*NNW*/"\x00\x00\x07\x00\x07\x20\x30\x38\x2c\x3c\x30\x00",
     /*N*/  "\x00\x00\x07\x00\x07\x10\x38\x38\x6c\x7c\x00\x00",
 };
-#else
+#else /* larger 9x9 cursor */
 static unsigned char *cursors[] = {
     /*?*/  "\x00\x00\x09\x00\x09\x00\x00\x00\x00\x08\x00\x1c\x00\x36\x00\x1c\x00\x08\x00\x00\x00\x00\x00",
     /*N*/  "\x00\x00\x09\x00\x09\x08\x00\x08\x00\x1c\x00\x1c\x00\x36\x00\x3e\x00\x00\x00\x00\x00\x00\x00",
@@ -232,7 +232,7 @@ void draw_info(void)
     vfdlib_drawText(screen, buf, VFD_WIDTH - vfdlib_getTextWidth(buf, 0)+1,
 		    VFD_HEIGHT + 1 - h0, 0, -1);
 
-    draw_popup(show_popups && dist < 1000 ? desc : NULL);
+    draw_popup(show_popups && (dist < 1000 || show_popups == 2) ? desc : NULL);
 
     /* draw pointer */
     b = radtodeg(bearing(&gps_coord.xy, &pos)) - gps_bearing;
@@ -244,6 +244,8 @@ void draw_info(void)
     tip_y = center_y - (int)(6.0 * cos(b2));
     vfdlib_drawLineUnclipped(screen, center_x, center_y,
 			     tip_x, tip_y, VFDSHADE_BRIGHT);
+    if (gps_bearing == -1)
+	b = -1;
     _draw_mark(tip_x, tip_y, b, VFDSHADE_BRIGHT);
 }
 

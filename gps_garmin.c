@@ -60,10 +60,10 @@ static double garmin_double(char *p)
     return u.v;
 }
 
-static int garmin_r33pvt_data(struct gps_state *gps)
+static void garmin_r33pvt_data(struct gps_state *gps)
 {
     if (packet_idx != 67)
-	return 0;
+	return;
 
     /* difference between UNIX and Garmin time which starts 1/1/1990? */
 #define EPOCHDIFF 631065600
@@ -76,21 +76,21 @@ static int garmin_r33pvt_data(struct gps_state *gps)
     gps->spd_north = *(float *)&packet[48];
     gps->spd_up    = *(float *)&packet[52];
 
+    gps->updated |= GPS_STATE_COORD | GPS_STATE_SPEED;
+
     if (*(short *)&packet[18] < 2)
 	gps->bearing = -1;
     else {
 	gps->bearing = radtodeg(atan2(gps->spd_east, gps->spd_north));
 	if (gps->bearing < 0) gps->bearing += 360;
+	gps->updated |= GPS_STATE_BEARING;
     }
-
-    return 1;
 }
 
-static int garmin_decode(struct gps_state *gps)
+static void garmin_decode(struct gps_state *gps)
 {
     if (packet[0] == PVT)
-	return garmin_r33pvt_data(gps);
-    return 0;
+	garmin_r33pvt_data(gps);
 }
 
 static void garmin_init(void)
@@ -100,26 +100,25 @@ static void garmin_init(void)
     garmin_send(CMD, cmd, 2);
 }
 
-static int garmin_update(char c, struct gps_state *gps)
+static void garmin_update(char c, struct gps_state *gps)
 {
     static int dles, dle_escape;
     static unsigned char csum;
-    int update = 0;
 
     if (c == DLE) {
-	if (++dles == 1) return 0; /* start of packet */
+	if (++dles == 1) return; /* start of packet */
 	if (!packet_idx && dles == 2)
 	    goto restart;
 
 	/* <dle> inside a packet should be doubled so we drop some */
 	if (!dle_escape) {
 	    dle_escape = 1;
-	    return 0;
+	    return;
 	}
     }
 
     /* still waiting for start of packet... */
-    if (!dles) return 0;
+    if (!dles) return;
 
     /* We should never see dle or etx as the id */
     if (!packet_idx && c == ETX)
@@ -128,7 +127,7 @@ static int garmin_update(char c, struct gps_state *gps)
     /* end of packet? */
     if (dle_escape && c == ETX) {
 	if (csum == 0) {
-	    update = garmin_decode(gps);
+	    garmin_decode(gps);
 	    if (packet[0] != ACK && packet[0] != NACK)
 		garmin_send_ack();
 	}
@@ -139,7 +138,7 @@ restart:
 	dles = 0;
 	dle_escape = 0;
 	csum = 0;
-	return update;
+	return;
     }
 
     dle_escape = 0;
@@ -150,8 +149,7 @@ restart:
     /* discard long lines */
     if (packet_idx == MAX_PACKET_SIZE)
 	goto restart;
-    return 0;
 }
 
-REGISTER_PROTOCOL("GARMIN", 9600, 'N', garmin_init, garmin_update);
+REGISTER_PROTOCOL("GARMIN", 9600, 'N', garmin_init, NULL, garmin_update);
 

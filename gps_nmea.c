@@ -11,99 +11,15 @@
 #include "gpsapp.h"
 #include "gps_protocol.h"
 
-struct gps_info {
-    int		 timestamp;
-    int		 datestamp;
-    int		 coord_set;
-    double	 lat;
-    double	 lon;
-    int		 speed_set;
-    double	 speed;
-    int		 bearing_set;
-    double	 bearing;
-    int		 fix;
-};
+static int timestamp, datestamp;
 
-static int timestamp, got_sats;
-
-static int new_measurement(const struct gps_info *tmp, struct gps_state *gps)
+static time_t today(void)
 {
-    static struct gps_info cur;
-    struct xy last_coord;
-    double b;
-    int update = 0;
-
-    if (tmp->timestamp && tmp->timestamp != cur.timestamp) {
-	last_coord = gps_coord.xy;
-
-	if (cur.coord_set) {
-	    gps->lat = degtorad(cur.lat);
-	    gps->lon = degtorad(cur.lon);
-	}
-
-        if (cur.bearing_set) b = cur.bearing;
-	else                 b = bearing(&last_coord, &gps_coord.xy);
-
-	if (cur.speed_set) {
-	    double speed = cur.speed / 3.6; // * 1000 / 3600
-	    gps->spd_east  = sin(b) * speed;
-	    gps->spd_north = cos(b) * speed;
-	    gps->spd_up    = 0.0;
-	}
-
-	if (!cur.fix)
-	    gps->bearing = -1;
-	else
-	    gps->bearing = radtodeg(b);
-
-	/* Some gps's don't give us any NMEA sentences with a date, we can try
-	 * to compensate by pulling the date off of the local clock... */
-	if (!cur.datestamp) {
-	    time_t now = time(NULL);
-	    struct tm *tm = gmtime(&now);
-	    cur.datestamp = conv_date(tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday);
-	}
-	gps->time = timestamp = cur.timestamp + cur.datestamp;
-
-	memset(&cur, 0, sizeof(cur));
-
-	update = 1;
-    }
-
-    if (tmp->timestamp)
-	cur.timestamp = tmp->timestamp;
-    if (tmp->datestamp)
-	cur.datestamp = tmp->datestamp;
-
-    if (tmp->coord_set == 2) {
-	cur.lat = tmp->lat;
-	cur.lon = tmp->lon;
-	cur.coord_set = 2;
-    }
-
-    if (tmp->fix)
-	cur.fix = 1;
-
-    if (tmp->bearing_set) {
-	cur.bearing = tmp->bearing;
-	cur.bearing_set = 1;
-    }
-
-    if (tmp->speed_set) {
-	cur.speed = tmp->speed;
-	cur.speed_set = 1;
-    }
-#if 0
-    printf("ts %d fix %d lat %.6f lon %.6f spd %.2f%s bear %.2f%s\n",
-	   cur.timestamp, cur.fix, cur.lat, cur.lon,
-	   cur.speed, cur.speed_set ? "" : "?",
-	   cur.bearing, cur.bearing_set ? "" : "?");
-#endif
-    if (got_sats) {
-	update = 1;
-	got_sats = 0;
-    }
-    return update;
+    /* Some gps's don't give us any NMEA sentences with a date, we can try
+     * to compensate by pulling the date off of the local clock... */
+    time_t now = time(NULL);
+    struct tm *tm = gmtime(&now);
+    return conv_date(tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday);
 }
 
 static int hex(char c)
@@ -169,7 +85,7 @@ static int nmea_date(char **p)
 
 static int nmea_latlong(char **p, double *latlong, char pos, char neg)
 {
-    double min;
+    double min, tmp;
     int deg, inv;
 
     if (**p != ',')
@@ -191,11 +107,12 @@ static int nmea_latlong(char **p, double *latlong, char pos, char neg)
 
     deg = min / 100;
     min -= deg * 100.0;
-    *latlong = deg + (min / 60.0);
+    tmp = deg + (min / 60.0);
 
     if (inv)
-	*latlong = -*latlong;
+	tmp = -tmp;
 
+    *latlong = degtorad(tmp);
     return 1;
 }
 
@@ -242,78 +159,111 @@ static int nmea_float(char **p, double *val)
     return 1;
 }
 
-int nmea_decode(char xor, struct gps_state *gps)
+void nmea_decode(struct gps_state *gps, char xor)
 {
-    double b;
-    int n, csum;
-    struct gps_info tmp;
     char *p;
-
-    /* NMEA lines should start with a '$' */
-    if (packet[0] != '$') {
-	/* recognize tripmate's 'ASTRAL' message */
-	if (packet_idx >= 6 && memcmp(packet, "ASTRAL", 6) == 0)
-	    serial_send("$IIGPQ,ASTRAL*73\r\n", 18);
-	return 0;
-    }
-
-    /* and end with '*XX' */
-    n = strlen(packet);
-    if (n < 9 || packet[n-3] != '*') return 0;
-
-    /* fix up the xor and check the trailing checksum */
-    xor ^= '$' ^ '*' ^ packet[n-2] ^ packet[n-1];
-    csum = hex(packet[n-2]) << 4 | hex(packet[n-1]);
-    if (xor != csum) return 0;
 
 #ifndef __arm__
     fprintf(stderr, "%s\n", packet);
 #endif
 
     p = &packet[6];
-    memset(&tmp, 0, sizeof(tmp));
 
     if (memcmp(&packet[1], "GPGGA", 5) == 0) {
 	/* $GPGGA,time,lat,N/S,long,E/W,fix(0/1/2),nsat,HDOP,alt,gheight,
 	 * dgpsdt,dgpsid* */
-	tmp.timestamp      = nmea_time(&p);
-	tmp.coord_set      = nmea_latlong(&p, &tmp.lat, 'N', 'S');
-	tmp.coord_set     += nmea_latlong(&p, &tmp.lon, 'E', 'W');
-	tmp.fix            = nmea_fix(&p);
-    } else if (memcmp(&packet[1], "GPGLL", 5) == 0) {
+	int timestamp, lat_set, lon_set, fix;
+	double lat, lon;
+
+	timestamp = nmea_time(&p);
+	lat_set = nmea_latlong(&p, &lat, 'N', 'S');
+	lon_set = nmea_latlong(&p, &lon, 'E', 'W');
+	fix = nmea_fix(&p);
+
+	gps->time = timestamp + datestamp;
+	if (!datestamp) gps->time += today();
+
+	if (lat_set && lon_set) {
+	    gps->lat = lat;
+	    gps->lon = lon;
+	    gps->updated |= GPS_STATE_COORD;
+	}
+    }
+    else if (memcmp(&packet[1], "GPGLL", 5) == 0) {
 	/* $GPGLL,lat,N/S,long,E/W,time,fix(?/A)* */
-	tmp.coord_set      = nmea_latlong(&p, &tmp.lat, 'N', 'S');
-	tmp.coord_set     += nmea_latlong(&p, &tmp.lon, 'E', 'W');
-	tmp.timestamp      = nmea_time(&p);
-	tmp.fix            = nmea_fix(&p);
-    } else if (memcmp(&packet[1], "GPRMC", 5) == 0) {
+	int timestamp, lat_set, lon_set, fix;
+	double lat, lon;
+
+	lat_set = nmea_latlong(&p, &lat, 'N', 'S');
+	lon_set = nmea_latlong(&p, &lon, 'E', 'W');
+	timestamp = nmea_time(&p);
+	fix = nmea_fix(&p);
+
+	gps->time = timestamp + datestamp;
+	if (!datestamp) gps->time += today();
+
+	if (lat_set && lon_set) {
+	    gps->lat = lat;
+	    gps->lon = lon;
+	    gps->updated |= GPS_STATE_COORD;
+	}
+
+    }
+    else if (memcmp(&packet[1], "GPRMC", 5) == 0) {
 	/* $GPRMC,time,fix(V/A),lat,N/S,long,E/W,knot-speed,bear,date,magnvar**/
-	tmp.timestamp      = nmea_time(&p);
-	tmp.fix            = nmea_fix(&p);
-	tmp.coord_set      = nmea_latlong(&p, &tmp.lat, 'N', 'S');
-	tmp.coord_set     += nmea_latlong(&p, &tmp.lon, 'E', 'W');
-	if (tmp.speed_set) {
-	    p++; skip(&p);
-	}
-	else {
-	    tmp.speed_set  = nmea_float(&p, &tmp.speed);
-	    tmp.speed = tmp.speed / 539.9568e-3;
-	}
-	tmp.bearing_set    = nmea_float(&p, &b);
-	tmp.datestamp	   = nmea_date(&p);
+	int timestamp, fix, lat_set, lon_set, spd_set;
+	double lat, lon, spd, bearing;
 
-	if (tmp.bearing_set)
-		tmp.bearing = degtorad(b);
-    } else if (memcmp(&packet[1], "GPVTG", 5) == 0) {
+	timestamp = nmea_time(&p);
+	fix = nmea_fix(&p);
+	lat_set = nmea_latlong(&p, &lat, 'N', 'S');
+	lon_set = nmea_latlong(&p, &lon, 'E', 'W');
+	spd_set = nmea_float(&p, &spd);
+	if (nmea_float(&p, &bearing)) {
+	    gps->bearing = (int)bearing;
+	    gps->updated |= GPS_STATE_BEARING;
+	}
+	datestamp = nmea_date(&p);
+
+	gps->time = timestamp + datestamp;
+
+	if (lat_set && lon_set) {
+	    gps->lat = lat;
+	    gps->lon = lon;
+	    gps->updated |= GPS_STATE_COORD;
+	}
+
+	if (spd_set) {
+	    double b = degtorad(gps->bearing);
+	    spd /= 539.9568e-3 /* knots to kph */ * 3.6 /* kph to m/s */;
+	    gps->spd_east  = sin(b) * spd;
+	    gps->spd_north = cos(b) * spd;
+	    gps->spd_up    = 0.0;
+	    gps->updated |= GPS_STATE_SPEED;
+	}
+    }
+    else if (memcmp(&packet[1], "GPVTG", 5) == 0) {
 	/* $GPVTG,bear,T,magnbear,M,knot-speed,N,kph-speed,K* */
-	tmp.bearing_set = nmea_float(&p, &b); skip(&p);
-	p++; skip(&p); p++; skip(&p);
-	p++; skip(&p); p++; skip(&p);
-	tmp.speed_set = nmea_float(&p, &tmp.speed);
-
-	if (tmp.bearing_set)
-		tmp.bearing = degtorad(b);
-    } else if (memcmp(&packet[1], "GPGSV", 5) == 0) {
+	double bearing, spd;
+	if (nmea_float(&p, &bearing)) {
+		gps->bearing = (int)bearing;
+		gps->updated |= GPS_STATE_BEARING;
+	}
+	p++; skip(&p); // T
+	p++; skip(&p); // magnbear
+	p++; skip(&p); // M
+	p++; skip(&p); // knot-speed
+	p++; skip(&p); // N
+	if (nmea_float(&p, &spd)) {
+	    double b = degtorad(gps->bearing);
+	    spd /= 3.6 /* kph to m/s */;
+	    gps->spd_east  = sin(b) * spd;
+	    gps->spd_north = cos(b) * spd;
+	    gps->spd_up    = 0.0;
+	    gps->updated |= GPS_STATE_SPEED;
+	}
+    }
+    else if (memcmp(&packet[1], "GPGSV", 5) == 0) {
 	/* $GPGSV,nmsg,msg,nsat,svn1,elv1,azm1,snr1,...,svn4,elv4,azm4,snr4* */
 	double elv, azm;
 	int i, svn, snr;
@@ -330,26 +280,32 @@ int nmea_decode(char xor, struct gps_state *gps)
 
 	    new_sat(gps, svn, timestamp, elv, azm, snr, UNKNOWN_USED);
 	}
-	got_sats = (nmsg == msg);
-    } else if (memcmp(&packet[1], "GPGSA", 5) == 0) {
+	if (msg == nmsg)
+	    gps->updated |= GPS_STATE_SIGNALS | GPS_STATE_SATS;
+    }
+    else if (memcmp(&packet[1], "GPGSA", 5) == 0) {
 	/* $GPGSA,mode,fix(0/1/2D/3D),sat1,...,sat12,pdop,hdop,vdop* */
 	int i, svn;
-	p++; skip(&p); p++; skip(&p);
+
 	for (i = 0; i < MAX_TRACKED_SATS; i++)
 	    gps->sats[i].used = 0;
-	for (i = 0; i < 12; i++)
+
+	p++; skip(&p);
+	p++; skip(&p);
+
+	for (i = 0; i < 12; i++) {
 	    svn = nmea_int(&p);
 	    new_sat(gps, svn, timestamp, UNKNOWN_ELV, UNKNOWN_AZM, UNKNOWN_SNR, 1);
+	}
+	gps->updated |= GPS_STATE_SATS;
     }
-    return new_measurement(&tmp, gps);
 }
    
-static int nmea_update(char c, struct gps_state *gps)
+static void nmea_update(char c, struct gps_state *gps)
 {
     static char xor;
-    int update;
 
-    if (c == '\r') return 0;
+    if (c == '\r') return;
 
     if (packet_idx == MAX_PACKET_SIZE) {
 	/* discard long lines */
@@ -358,20 +314,42 @@ static int nmea_update(char c, struct gps_state *gps)
     }
 
     if (c == '\n') {
+	int n, csum;
+
 	packet[packet_idx] = '\0';
 
-	update = nmea_decode(xor, gps);
+	/* NMEA lines should start with a '$' */
+	if (packet[0] != '$') {
+	    /* recognize tripmate's 'ASTRAL' message */
+	    if (packet_idx >= 6 && memcmp(packet, "ASTRAL", 6) == 0)
+		serial_send("$IIGPQ,ASTRAL*73\r\n", 18);
+	    goto restart;
+	}
 
+	/* and end with '*XX' */
+	n = strlen(packet);
+	if (n < 9 || packet[n-3] != '*') goto restart;
+
+	/* fix up the xor and check the trailing checksum */
+	xor ^= '$' ^ '*' ^ packet[n-2] ^ packet[n-1];
+	csum = hex(packet[n-2]) << 4 | hex(packet[n-1]);
+	if (xor != csum) goto restart;
+
+	nmea_decode(gps, xor);
+
+restart:
 	packet_idx = 0;
 	xor = '\0';
 
-	return update;
+	return;
     }
 
     packet[packet_idx++] = c;
     xor ^= c;
 
-    return 0;
+    /* discard long lines */
+    if (packet_idx == MAX_PACKET_SIZE)
+	goto restart;
 }
 
 static void nmea_init(void)
@@ -379,5 +357,5 @@ static void nmea_init(void)
   serial_send("$PMOTG,VTG,0001\r\n", 17);
 }
 
-REGISTER_PROTOCOL("NMEA", 4800, 'N', nmea_init, nmea_update);
+REGISTER_PROTOCOL("NMEA", 4800, 'N', nmea_init, NULL, nmea_update);
 

@@ -21,16 +21,23 @@ void serial_send(char *buf, int len);
 struct gps_sat {
     int    svn;  /* satellite identifier (set to 0 when this slot is unused) */
     int	   time; /* appx time of last measurement */
-    double elv;  /* elevation above horizon in radians */
-    double azm;  /* azimuth from true north in radians */
+    double elv;  /* elevation above horizon in radians [0, PI/2] */
+    double azm;  /* azimuth from true north in radians [0, PI*2] */
     int    snr;  /* signal to noise ratio, scaled to [0, 24] */
     int    used; /* set when satellite is used in the fix */
 };
 
 struct gps_state {
+    int	    updated;    /* bitmask, which fields have been updated */
+#define GPS_STATE_COORD   0x1
+#define GPS_STATE_BEARING 0x2
+#define GPS_STATE_SPEED   0x4
+#define GPS_STATE_SIGNALS 0x8
+#define GPS_STATE_SATS    0x10
+
     time_t  time;	/* GPS time translated to unix time */
-    double  lat;	/* latitude in radians */
-    double  lon;	/* longtitude in radians */
+    double  lat;	/* latitude in radians [-PI/2, PI/2]*/
+    double  lon;	/* longtitude in radians [-PI, PI]*/
     int	    bearing;	/* current bearing (degrees 0 - 360) (-1 == no fix) */
     double  spd_east;   /* meters per second */
     double  spd_north;  /* meters per second */
@@ -44,10 +51,12 @@ struct gps_protocol {
     char *name;
     int baud;
     char parity;
-    void (*init)(void);
-    int (*update)(char c, struct gps_state *state);
+    void (*init)(void); /* protocol initializer */
+    void (*poll)(void); /* every 5 seconds to poll non-automatic updates */
+    void (*update)(char c, struct gps_state *state); /* serial input */
 };
 
+/* helper functions in gps_protocol.c */
 #define UNKNOWN_TIME -1
 #define UNKNOWN_ELV -1.0
 #define UNKNOWN_AZM -1.0
@@ -59,8 +68,8 @@ int conv_date(int year, int mon, int day);
 
 extern struct gps_protocol *gps_protocols;
 
-#define REGISTER_PROTOCOL(proto_name, serial_baud, serial_parity, initfunc, updatefunc) \
-  static struct gps_protocol __this = { .name = proto_name, .baud = serial_baud, .parity = serial_parity, .init = initfunc, .update = updatefunc }; \
+#define REGISTER_PROTOCOL(proto_name, serial_baud, serial_parity, initfunc, pollfunc, updatefunc) \
+  static struct gps_protocol __this = { .name = proto_name, .baud = serial_baud, .parity = serial_parity, .init = initfunc, .poll = pollfunc, .update = updatefunc }; \
   static __attribute__((constructor)) void ___init(void) { __this.next = gps_protocols; gps_protocols = &__this; }
 
 /* automatic destructors don't work right on the arm, or did I mess this up?? */
