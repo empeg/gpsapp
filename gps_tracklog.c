@@ -28,10 +28,11 @@ static int tracklog_read(struct state *pos)
 {
     int hour, min, sec;
 
-    do {
-	if (feof(track)) return 0;
-	fgets(packet, MAX_PACKET_SIZE, track);
-    } while (packet[0] != 'T');
+next:
+    if (feof(track)) return 0;
+    fgets(packet, MAX_PACKET_SIZE, track);
+    if (packet[0] == '$') return 2;
+    if (packet[0] != 'T') goto next;
 
     hour = strtol(&packet[13], NULL, 10);
     min = strtol(&packet[16], NULL, 10);
@@ -45,14 +46,19 @@ static int tracklog_read(struct state *pos)
 
 void tracklog_init(void)
 {
+    extern int serialfd;
+
     if (track)
 	fclose(track);
 
     track = fopen("track", "r");
-    tracklog_read(&prev);
+    serialfd = fileno(track);
+    //if (tracklog_read(&prev) == 2) rewind(track);
+
     gps_state.time = prev.time;
 }
 
+extern void nmea_decode(struct gps_state *gps);
 void tracklog_update(char c, struct gps_state *gps)
 {
     struct state cur;
@@ -67,8 +73,12 @@ void tracklog_update(char c, struct gps_state *gps)
 
 next:
     offset = ftell(track);
-    if (!tracklog_read(&cur))
-	return;
+
+    switch (tracklog_read(&cur)) {
+    case 2:  nmea_decode(gps);
+    case 0:  return;
+    default: break;
+    }
 
     if (gps->time >= cur.time) {
 	prev = cur;

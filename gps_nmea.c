@@ -159,7 +159,7 @@ static int nmea_float(char **p, double *val)
     return 1;
 }
 
-void nmea_decode(struct gps_state *gps, char xor)
+void nmea_decode(struct gps_state *gps)
 {
     char *p;
 
@@ -380,7 +380,7 @@ static void nmea_update(char c, struct gps_state *gps)
 	csum = hex(packet[n-2]) << 4 | hex(packet[n-1]);
 	if (xor != csum) goto restart;
 
-	nmea_decode(gps, xor);
+	nmea_decode(gps);
 
 restart:
 	packet_idx = 0;

@@ -25,7 +25,7 @@
 
 #define GPSD_PORT 2947
 
-static int serialfd = -1;
+int serialfd = -1;
 
 /* this is a buffer that can be shared by all protocols because only one will
  * be active at a time anyways */
@@ -102,6 +102,9 @@ void serial_open(void)
 	serial_protocol("NMEA");
     }
 
+    if (protocol->baud == 0)
+	goto tracklog;
+
     serialfd = open(SERIALDEV, O_NOCTTY | O_RDWR | O_NONBLOCK);
     if (serialfd == -1) goto exit;
 
@@ -131,12 +134,16 @@ void serial_open(void)
     if (ret == -1) goto exit;
 
     fcntl(serialfd, F_SETFL, O_RDWR | O_NOCTTY);
+
 exit:
     if (ret == -1) {
 	serial_close();
 	err("Failed to set up serial port");
+	return;
     }
-    else if (protocol->init)
+
+tracklog:
+    if (protocol->init)
 	protocol->init();
 
     /* This a bit of a weird solution. While we're waiting for a fix we don't
