@@ -8,6 +8,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <net/if.h>
 #include <fcntl.h>
 #include <termios.h>
 #include <unistd.h>
@@ -50,6 +51,7 @@ void serial_protocol(char *proto)
 
 static int gpsd_open(void)
 {
+    struct ifreq ifr;
     struct sockaddr_in sin;
     int fd, ret, flag = 1;
     
@@ -57,10 +59,30 @@ static int gpsd_open(void)
     if (fd == -1)
 	return -1;
 
+    memset(&sin, 0, sizeof(struct sockaddr_in));
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    sin.sin_port = htons(GPSD_PORT);
 
+    /* make sure that at the loopback network device is up.
+     * This code is taken from dbrashear's mini_ifconfig */
+    strcpy(ifr.ifr_name, "lo");
+    memcpy(&ifr.ifr_addr, &sin, sizeof(struct sockaddr_in));
+    /* set the inet address for 'lo' */
+    if (ioctl(fd, SIOCSIFADDR, &ifr) < 0) {
+	close(fd);
+	return -1;
+    }
+    /* bring the interface up */
+    strcpy(ifr.ifr_name, "lo");
+    ifr.ifr_flags = (IFF_UP | IFF_RUNNING);
+    if (ioctl(fd, SIOCSIFFLAGS, &ifr) < 0) {
+	close(fd);
+	return -1;
+    }
+
+    /* and now we can try to connect to the gpsd without having to worry about
+     * getting stuck in connect() */
+    sin.sin_port = htons(GPSD_PORT);
     ret = connect(fd, (struct sockaddr *)&sin, sizeof(sin));
     if (ret == -1) {
 	close(fd);

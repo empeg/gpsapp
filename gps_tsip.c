@@ -62,6 +62,12 @@ static void tsip_send(char *buf, unsigned char len)
     serial_send(cmd, j);
 }
 
+static void tsip_22_position_fix_mode_select()
+{
+    /* auto 2D/3D fixes */
+    tsip_send("\x22\x00", 2);
+}
+
 static void tsip_24_req_gps_fix(void)
 {
     tsip_send("\x24", 1);
@@ -77,6 +83,25 @@ static void tsip_25_softreset(void)
 static void tsip_27_req_signal_levels(void)
 {
     tsip_send("\x27", 1);
+}
+
+static void tsip_2C_set_operating_parameters()
+{
+    char d[18];
+    union { char c[4]; float v; } em, sm, dm, ds;
+
+    em.v = 0.0873; /* elevation mask: 5 degrees */
+    sm.v = 2.0;	   /* signal strength mask */
+    dm.v = 12.0;   /* DOP mask */
+    ds.v = 5.0;	   /* DOP switch */
+
+    d[0] = '\x2c';
+    d[1] = 1; /* land dynamics */
+    d[2] = em.c[3];  d[3] = em.c[2];  d[4] = em.c[1];  d[5] = em.c[0];
+    d[6] = sm.c[3];  d[7] = sm.c[2];  d[8] = sm.c[1];  d[9] = sm.c[0];
+    d[10] = dm.c[3]; d[11] = dm.c[2]; d[12] = dm.c[1]; d[13] = dm.c[0];
+    d[14] = ds.c[3]; d[15] = ds.c[2]; d[16] = ds.c[1]; d[17] = ds.c[0];
+    tsip_send(d, 18);
 }
 
 static void tsip_35_req_io_options(void)
@@ -262,6 +287,9 @@ static void tsip_82_dgps_fix(void)
     if (!initialized) {
 	/* receiver has restarted and is ready to receive commands */
 	initialized = 1;
+
+	tsip_22_position_fix_mode_select();
+	tsip_2C_set_operating_parameters();
 
 	/* check current settings, if they are off we'll correct them */
 	tsip_35_req_io_options();

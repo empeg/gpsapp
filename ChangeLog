@@ -5,6 +5,10 @@ Changes in v0.17
  * Enlarged font for current gps speed in map screen, moved distance back
    to the side panel and reduced the size of the bearing pointer.
  * Fixed negative altitude formatting bug.
+ * Merged mini_ifconfig code to bring up the loopback network device into
+   gpsapp to avoid a lockup when we're trying to connect to gpsd when the
+   loopback network is not available.
+ * Sending more initialization sequences to trimble gps when using TSIP.
 
  And a whole set of patches from Derrick,
  * mini_ifconfig, and send the trigger to gpsd to forward raw NMEA data.
