@@ -434,32 +434,30 @@ void draw_sats(struct gps_state *gps)
     /* show altitude */
     formatdist(line, gps_state.alt, 1);
     w0 = vfdlib_getTextWidth(line, 0);
-    vfdlib_drawText(screen, line, 96-w0, h0+1, 0,
+    vfdlib_drawText(screen, line, 96-w0, h0, 0,
 		    gps_state.fix == 3 ? -1 : VFDSHADE_MEDIUM);
+
+    /* show speed */
+    formatdist(line, gps_speed, 0);
+    strcat(line, "/h");
+    w0 = vfdlib_getTextWidth(line, 0);
+    vfdlib_drawText(screen, line, 96-w0, 2*h0, 0, -1);
 
     /* show HDOP */
     if (gps_state.hdop < 100.0)
 	 sprintf(line, "%4.2f HD", gps_state.hdop);
     else strcpy(line, "--.-- HD");
     w0 = vfdlib_getTextWidth(line, 0);
-    vfdlib_drawText(screen, line, 96-w0, 2*(h0+1), 0,
+    vfdlib_drawText(screen, line, 96-w0, 3*h0, 0,
 		    gps_state.fix ? -1 : VFDSHADE_MEDIUM);
 
-    /* show fix and # of svs used */
+    /* show type of fix and # of svs used */
     {
 	char *fixes[] = {"--", "  ", "2D", "3D" };
 	sprintf(line, "%s %2d SV", fixes[gps_state.fix], nsvs);
 	w0 = vfdlib_getTextWidth(line, 0);
-	vfdlib_drawText(screen, line, 96-w0, 3*(h0+1), 0, -1);
+	vfdlib_drawText(screen, line, 96-w0, 4*h0, 0, -1);
     }
-
-#if 0
-    /* show speed? */
-    if (show_metric)
-	 sprintf(line, "%3dkph", (int)((double)gps_speed / 1000.0));
-    else sprintf(line, "%3dmph", (int)((double)gps_speed / 1609.344));
-    vfdlib_drawText(screen, line, 64, h0*4, 0, -1);
-#endif
 
     /* fix, bearing, coordinates? */
     if (!data)

@@ -2,6 +2,10 @@ Changes in v0.15
 
  * From Derrick, send current time to Streetpilot receivers which should
    improve getting the initial lock.
+ * Fixed some TSIP things, correctly decode HDOP and used satellites, no more
+   blinking satellites. Don't assume a 'locked' satellite is actually used.
+   Avoid sending commands to the receiver while it is initializing.
+ * Added current reported speed to the satellite screen.
 
 Changes in v0.14
 

@@ -8,10 +8,7 @@
 
 * NMEA output over IRDA (and in the satellite screen).
 
-* Default options in config.ini, perhaps some way to permanently fix
-  some options and not show those menu entries anymore.
-
-* Initial position and RTC in config.ini, Zodiac support.
+* Initial position in config.ini, Zodiac support.
 
 * Rotate map so that the top is in the direction we're driving. Have to
   transform all coordinates, maybe too CPU intensive? Also we have fewer
@@ -31,12 +28,8 @@
   Although they don't contain one-way street information, however if we
   can reroute dynamically that should only be a minor problem.
 
-* More GPS protocol support (Earthmate/Tripmate/Oncore/Magellan/Lowrance?)
+* Support for more GPS protocols (Oncore/Magellan/Lowrance?)
 
-* Derive the local timezone offset and daylight savings time from the
-  GPS data in some way.
-
-* Sync the empeg clock based on GPS time. We need to be able to derive
-  localtime first, and have some estimate of the additional delays
-  introduced by serial and gpsapp.
+* Sync the empeg clock based on GPS time. We need to estimate the
+  additional delays introduced by serial and gpsapp.
 

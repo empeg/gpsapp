@@ -158,7 +158,7 @@ static void tsip_47_sat_signals(struct gps_state *gps)
 {
     unsigned char count, svn;
     double tmp;
-    int i, used, snr;
+    int i, snr;
 
     if (packet_idx < 2) return;
 
@@ -170,10 +170,9 @@ static void tsip_47_sat_signals(struct gps_state *gps)
 	svn = packet[2 + 5 * i];
 	/* attn. we get SNR both here and in tsip_5C_sat_track_status */
 	tmp = Single(&packet[3 + 5 * i]);
-	used = (tmp > 0);
 	snr = (int)fabsf(tmp) / 2;
 
-	new_sat(gps, svn, UNKNOWN_TIME, UNKNOWN_ELV, UNKNOWN_AZM, snr, used);
+	new_sat(gps, svn, UNKNOWN_TIME, UNKNOWN_ELV, UNKNOWN_AZM, snr, UNKNOWN_USED);
     }
     if (count)
 	gps->updated = GPS_STATE_SIGNALS;
@@ -223,9 +222,6 @@ static void tsip_5C_sat_track_status(struct gps_state *gps)
     svn = packet[1];
     /* attn. we get SNR both here and in tsip_47_sat_signals */
     tmp = Single(&packet[5]);
-    /* used = (tmp > 0); * although the documentation says this field is
-       identical to the snr field in packet 0x47, I'm not all too sure it
-       actually has the same 'negative == no lock' semantics */
     snr = (int)fabsf(tmp) / 2;
     time = datestamp + (int)Single(&packet[9]);
     elv = Single(&packet[13]);
@@ -332,6 +328,8 @@ static void tsip_init(void)
 
 static void tsip_poll(void)
 {
+    if (!initialized) return;
+
     /* get current fix status */
     tsip_24_req_gps_fix();
 

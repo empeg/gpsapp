@@ -50,6 +50,7 @@ Installation
   haven't received any of this info it shows 'Looking for satellites',
   some GPS's never send this information, others will only start sending
   it once they have achieved a 'fix'.
+
   Long press the down button (2-3 secs) and you're in the map screen,
   down, and a couple of left or right button presses should bring you to
   the 'coordinates' toggle. Turn it on by pressing down again and the
@@ -61,8 +62,8 @@ Installation
   from http://mapsonus.switchboard.com. If you select 'show lat/long'
   in the general options section, all planned routes will have a 'raw
   route description' link at the bottom of the page. Save this
-  description as HTML and run the python script 'parse_mapsonus.py' to
-  convert it into a file named 'route'.
+  description as HTML or text and run the python script
+  'parse_mapsonus.py' to convert it into a file named 'route'.
 
   Routes are preprocessed on the desktop because we have to map from
   geodetic coordinates in the NAD27 CONUS datum to a transverse mercator
@@ -82,20 +83,20 @@ Installation
     in NMEA, which is also the default setting.
   o visual=[sats|map|route]
     select default visual mode
-  o metric=[true|false]           
+  o metric=[true|false]
     select meters if true, miles if false
-  o gpscoords=[true|false]        
+  o gpscoords=[true|false]
     show latitude and longitude on the map screen if true
   o coord_format=[DDD|DMM|DMS]
     coordinate format
-  o track=[true|false]            
+  o track=[true|false]
     display previously traversed track if true
-  o scale=[true|false]            
+  o scale=[true|false]
     show map scale (in map mode) if true
   o popups=[true|false|permanent] 
     show waypoint text popups when near the waypoint if true, always if
     permanent, never if false
-  o time=[true|false]             
+  o time=[true|false]
     show time to next waypoint if true, distance if false
 
 Short operating instructions

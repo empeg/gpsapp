@@ -24,7 +24,7 @@ char *formatdist(char *buf, const int dist, const int alt)
 #define meters_per_foot 0.3048
     if (show_metric) {
 	if (dist < 1000 || alt)
-	    sprintf(buf, "%um ", dist);
+	    sprintf(buf, "%um", dist);
 	else {
 	    int decameters = dist / 10;
 	    if (decameters < 1000)
