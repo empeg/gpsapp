@@ -27,7 +27,7 @@ struct gps_info {
 static int sol[12], timestamp, got_sats;
 
 /* convert year/month/day to unix time */
-static int date(int year, int mon, int day)
+int conv_date(int year, int mon, int day)
 {
 #define	GPSEPOCH 1980
 #define GPSLEAPS 479
@@ -89,7 +89,7 @@ static int new_measurement(const struct gps_info *tmp, struct gps_state *gps)
 	if (!cur.datestamp) {
 	    time_t now = time(NULL);
 	    struct tm *tm = gmtime(&now);
-	    cur.datestamp = date(tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday);
+	    cur.datestamp = conv_date(tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday);
 	}
 	gps->time = timestamp = cur.timestamp + cur.datestamp;
 
@@ -155,9 +155,12 @@ void new_sat(struct gps_state *gps, int svn, int elv, int azm, int snr)
 update:
     gps->sats[i].time = timestamp;
     gps->sats[i].svn = svn;
-    gps->sats[i].elv = elv;
-    gps->sats[i].azm = azm;
-    gps->sats[i].snr = snr;
+    if (elv != -1)
+	gps->sats[i].elv = elv;
+    if (azm != -1)
+	gps->sats[i].azm = azm;
+    if (snr != -1)
+	gps->sats[i].snr = snr;
     gps->sats[i].used = 0;
 
     for (j = 0; j < 12; j++)
@@ -222,7 +225,7 @@ static int nmea_date(char **p)
 
     if (day >= 1 && day <= 31 && mon >= 1 &&
 	mon <= 12 && year >= 00 && year <= 99)
-	    datestamp = date(year + 2000, mon, day);
+	    datestamp = conv_date(year + 2000, mon, day);
 
     return datestamp;
 }

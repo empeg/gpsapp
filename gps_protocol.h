@@ -48,6 +48,9 @@ struct gps_protocol {
     int (*update)(char c, struct gps_state *state);
 };
 
+void new_sat(struct gps_state *gps, int svn, int elv, int azm, int snr);
+int conv_date(int year, int mon, int day);
+
 extern struct gps_protocol *gps_protocols;
 
 #define REGISTER_PROTOCOL(proto_name, serial_baud, serial_parity, initfunc, updatefunc) \
