@@ -54,9 +54,10 @@ extern struct coord coord_center;
 #define degtorad(deg) (deg * ((2.0 * M_PI) / 360.0))
 #define radtodeg(rad) (rad * (360.0 / (2.0 * M_PI)))
 
-char *formatdist(char *buf, const int distance, const int alt);
+char *formatdist(char *buf, const unsigned int distance);
+char *formatalt(char *buf, const int alt);
 char *formatspeed(char *buf, const int speed);
-char *time_estimate(char *buf, const int distance);
+char *time_estimate(char *buf, const unsigned int distance);
 char *format_coord(char *buf, double llr, char dir[2]);
 
 void toTM(struct coord *point);
@@ -105,7 +106,7 @@ void route_update_vmg(void);
 
 extern struct gps_state gps_state;
 extern struct coord     gps_coord;
-extern int		gps_speed;     /* current speed measurement */
+extern unsigned int	gps_speed;     /* current speed measurement */
 extern int              gps_avgvmg;    /* average velocity made good */
 extern int		gps_bearing;   /* last 'stable' bearing measurement */
 #define AVGVMG_SHIFT 6

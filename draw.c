@@ -188,7 +188,7 @@ void draw_scale(void)
 {
     char buf[10];
 
-    formatdist(buf, 8 << map_scale, 0);
+    formatdist(buf, 8 << map_scale);
     vfdlib_drawText(screen, buf, MAX_X - vfdlib_getTextWidth(buf, 0), 1, 0,
 		    VFDSHADE_BRIGHT);
 }
@@ -222,7 +222,7 @@ void draw_info(void)
 
     if (route_getwp(-1, NULL, &dist, NULL)) {
 	if (show_time) time_estimate(buf, dist);
-	else           formatdist(buf, dist, 0);
+	else           formatdist(buf, dist);
 	vfdlib_drawText(screen, buf, VFD_WIDTH - vfdlib_getTextWidth(buf, 0)+1,
 			0, 0, -1);
     }
@@ -237,7 +237,7 @@ void draw_info(void)
     }
 
     if (show_time) time_estimate(buf, dist);
-    else	   formatdist(buf, dist, 0);
+    else	   formatdist(buf, dist);
     vfdlib_drawText(screen, buf, VFD_WIDTH - vfdlib_getTextWidth(buf, 0) + 1,
 		    VFD_HEIGHT + 1 - vfdlib_getTextHeight(0), 0, -1);
 
@@ -325,7 +325,7 @@ void draw_wpstext(void)
 		vfdlib_drawText(screen, "+", 0, vert, 0, -1);
 		route_getwp(topwp + i - 1, NULL, &last_dist, NULL);
 	    }
-	    formatdist(buf, abs(dist - last_dist), 0);
+	    formatdist(buf, abs(dist - last_dist));
 	}
 	vfdlib_drawText(screen, buf, SHIFT - 1 - vfdlib_getTextWidth(buf, 0),
 			vert, 0, -1);
@@ -456,13 +456,13 @@ void draw_sats(struct gps_state *gps)
     vfdlib_drawText(screen, line, 12+w0, 0, 0, -1);
 
     /* show altitude */
-    formatdist(line, gps_state.alt, 1);
+    formatalt(line, gps_state.alt);
     w0 = vfdlib_getTextWidth(line, 0);
     vfdlib_drawText(screen, line, 96-w0, h0, 0,
 		    gps_state.fix == 0x3 ? -1 : VFDSHADE_MEDIUM);
 
     /* show speed */
-    formatdist(line, gps_speed, 0);
+    formatdist(line, gps_speed);
     strcat(line, "/h");
     w0 = vfdlib_getTextWidth(line, 0);
     vfdlib_drawText(screen, line, 96-w0, 2*h0, 0,

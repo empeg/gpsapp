@@ -39,7 +39,7 @@ struct gps_state gps_state;
 
 /* we update these whenever the location is updated */
 struct coord gps_coord;
-int	     gps_speed;
+unsigned int gps_speed;
 int	     gps_avgvmg;
 int	     gps_bearing;
 

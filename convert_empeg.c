@@ -18,37 +18,45 @@ int stats_distance;
 int stats_bearing;
 
 /* buf needs to be at least 10 characters */
-char *formatdist(char *buf, const int dist, const int alt)
+char *formatdist(char *buf, const unsigned int dist)
 {
     if (show_metric) {
-	if (dist < 1000 || alt)
-	    sprintf(buf, "%dm", dist);
+	if (dist < 1000)
+	    sprintf(buf, "%um", dist);
 	else {
 	    int decameters = dist / 10;
 	    if (decameters < 1000)
-		sprintf(buf, "%d.%02ukm", decameters / 100,
+		sprintf(buf, "%u.%02ukm", decameters / 100,
 			decameters % 100);
 	    else if (decameters < 10000)
-		sprintf(buf, "%d.%ukm", decameters / 100,
+		sprintf(buf, "%u.%ukm", decameters / 100,
 			(decameters / 10) % 10);
 	    else
-		sprintf(buf, "%dkm", decameters / 100);
+		sprintf(buf, "%ukm", decameters / 100);
 	}
     } else {
 #define meters_per_mile 1609.344
 #define meters_per_foot 0.3048
-	if (dist < 161 || alt) // ~ 0.1 mile, 305 would be ~1000 feet
-	    sprintf(buf, "%dft", (dist * 10000) / 3048);
+	if (dist < 161) // ~ 0.1 mile, 305 would be ~1000 feet
+	    sprintf(buf, "%uft", (dist * 10000) / 3048);
 	else {
 	    int centimiles = (dist * 1000) / 16093; // .44
 	    if (centimiles < 1000)
-		sprintf(buf, "%d.%02umi", centimiles / 100, centimiles % 100);
+		sprintf(buf, "%u.%02umi", centimiles / 100, centimiles % 100);
 	    else if (centimiles < 10000)
-		sprintf(buf, "%d.%umi", centimiles / 100, (centimiles/10) % 10);
+		sprintf(buf, "%u.%umi", centimiles / 100, (centimiles/10) % 10);
 	    else
-		sprintf(buf, "%dmi", centimiles / 100);
+		sprintf(buf, "%umi", centimiles / 100);
 	}
     }
+    return buf;
+}
+
+/* buf needs to be at least 10 characters */
+char *formatalt(char *buf, const int alt)
+{
+    if (show_metric) sprintf(buf, "%um", alt);
+    else             sprintf(buf, "%uft", (alt * 10000) / 3048);
     return buf;
 }
 
@@ -63,7 +71,7 @@ char *formatspeed(char *buf, const int speed)
 }
 
 /* buf needs to be at least 10 characters */
-char *time_estimate(char *buf, const int dist)
+char *time_estimate(char *buf, const unsigned int dist)
 {
     int hour, min;
     time_t sec;
