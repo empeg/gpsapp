@@ -183,12 +183,12 @@ void nmea_decode(struct gps_state *gps)
 	lon_set = nmea_latlong(&p, &lon, 'E', 'W');
 
 	fix = nmea_fix(&p);
-	if (fix && !gps->fix) {
-	    gps->fix = 1;
+	if (fix && !(gps->fix & 0x1)) {
+	    gps->fix |= 0x1;
 	    gps->updated |= GPS_STATE_FIX;
 	}
-	if (!fix && gps->fix) {
-	    gps->fix = 0;
+	if (!fix && (gps->fix & 0x1)) {
+	    gps->fix &= ~0x1;
 	    gps->updated |= GPS_STATE_FIX;
 	}
 
@@ -213,12 +213,12 @@ void nmea_decode(struct gps_state *gps)
 	timestamp = nmea_time(&p);
 
 	fix = nmea_fix(&p);
-	if (fix && !gps->fix) {
-	    gps->fix = 1;
+	if (fix && !(gps->fix & 0x1)) {
+	    gps->fix |= 0x1;
 	    gps->updated |= GPS_STATE_FIX;
 	}
-	if (!fix && gps->fix) {
-	    gps->fix = 0;
+	if (!fix && (gps->fix & 0x1)) {
+	    gps->fix &= ~0x1;
 	    gps->updated |= GPS_STATE_FIX;
 	}
 
@@ -240,12 +240,12 @@ void nmea_decode(struct gps_state *gps)
 	timestamp = nmea_time(&p);
 
 	fix = nmea_fix(&p);
-	if (fix && !gps->fix) {
-	    gps->fix = 1;
+	if (fix && !(gps->fix & 0x1)) {
+	    gps->fix |= 0x1;
 	    gps->updated |= GPS_STATE_FIX;
 	}
-	if (!fix && gps->fix) {
-	    gps->fix = 0;
+	if (!fix && (gps->fix & 0x1)) {
+	    gps->fix &= ~0x1;
 	    gps->updated |= GPS_STATE_FIX;
 	}
 
@@ -328,8 +328,8 @@ void nmea_decode(struct gps_state *gps)
 
 	fix = nmea_int(&p);
 	switch (fix) {
-	case 3: fix = 3; break;
-	case 2: fix = 2; break;
+	case 3: fix |= 0x2; break;
+	case 2: fix &= ~0x2; break;
 	case 1: fix = 0; break;
 	default: break;
 	}

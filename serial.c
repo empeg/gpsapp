@@ -16,6 +16,7 @@
 
 /* If the protocol has a polling function, we call it once every 5 seconds */
 #define POLL_INTERVAL 5
+#define UPDATE_INTERVAL 1
 
 #ifdef __arm__
 #define SERIALDEV "/dev/ttyS1"
@@ -173,15 +174,14 @@ static int serial_avail(void)
 
 void serial_poll()
 {
-    static time_t poll_stamp;
-    time_t old_gps_time;
+    static time_t poll_stamp, update_stamp;
+    time_t now;
     char buf[16];
     int n, i;
 
     if (serialfd == -1)
 	return;
 
-    old_gps_time = gps_state.time;
     while (serial_avail()) {
 	n = read(serialfd, buf, sizeof(buf));
 	if (n <= 0) break;
@@ -190,10 +190,12 @@ void serial_poll()
 	    protocol->update(buf[i], &gps_state);
     }
 
+    now = time(NULL);
     /* only updated once a second except when we have no fix, as the time isn't
      * updated in that case. And then only when we actually have received
      * something from the receiver */
-    if ((!gps_state.fix || old_gps_time != gps_state.time) && gps_state.updated)
+    if ((!(gps_state.fix & 0x1) || (update_stamp + UPDATE_INTERVAL <= now)) &&
+	gps_state.updated)
     {
 	gps_coord.lat = gps_state.lat;
 	gps_coord.lon = gps_state.lon;
@@ -207,24 +209,26 @@ void serial_poll()
 			 gps_state.spd_up * gps_state.spd_up) * 3600.0;
 
 	/* According to ellweber, bearing measurements are pretty flaky when
-	 * we're moving slower than 1-2 km/h */
-	if (gps_speed >= 2000) {
+	 * we're moving slower than 1-2 km/h, but the speed reported by my
+	 * receiver easily wanders up to 5 km/h when I'm standing still */
+	if (gps_speed >= 5000) {
 	    track_pos();
 	    gps_bearing = gps_state.bearing;
 	}
 
 	route_locate();
 
-	if (gps_speed >= 2000)
+	if (gps_speed >= 5000)
 	    route_update_vmg();
 
+	update_stamp = now;
 	gps_state.updated = 0;
 	do_refresh = 1;
     }
 
-    if (protocol->poll && poll_stamp + POLL_INTERVAL < time(NULL)) {
+    if (protocol->poll && poll_stamp + POLL_INTERVAL <= now) {
 	protocol->poll();
-	poll_stamp = time(NULL);
+	poll_stamp = now;
     }
 }
 

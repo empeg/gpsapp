@@ -32,8 +32,8 @@ static void em_1000geodpos(struct gps_state *gps)
     int bearing, solinv;
 
     solinv = INT16(&packet[WD(10)]) & 0x5;
-    if (solinv) gps->fix = 0;
-    else	gps->fix = 1;
+    if (solinv) gps->fix &= ~0x3; /* do we know whether it is a 2D or 3D fix? */
+    else	gps->fix |=  0x3;
 
     gps->lat = INT32(&packet[WD(27)]) * 1.0e-8;
     gps->lon = INT32(&packet[WD(29)]) * 1.0e-8;

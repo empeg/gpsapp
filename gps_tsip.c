@@ -144,12 +144,12 @@ static void tsip_46_health(struct gps_state *gps)
     status = packet[1];
     hwstatus = packet[2];
 
-    if (status == 0x00 && gps->fix == 0) {
-	gps->fix = 1;
+    if (status == 0x00 && !(gps->fix & 0x1)) {
+	gps->fix |= 0x1;
 	gps->updated |= GPS_STATE_FIX;
     }
-    if (status != 0x00 && gps->fix != 0) {
-	gps->fix = 0;
+    if (status != 0x00 && (gps->fix & 0x1)) {
+	gps->fix &= ~0x1;
 	gps->updated |= GPS_STATE_FIX;
     }
 }
@@ -239,8 +239,8 @@ static void tsip_6D_sats_in_view(struct gps_state *gps)
 
     tmp = packet[1];
     switch(tmp & 0x7) {
-    case 4: gps->fix = 3; break;
-    case 3: gps->fix = 2; break;
+    case 4: gps->fix |= 0x2; break;
+    case 3: gps->fix &= ~0x2; break;
     default: break;
     }
     gps->hdop = Single(&packet[6]);

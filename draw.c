@@ -443,13 +443,14 @@ void draw_sats(struct gps_state *gps)
     formatdist(line, gps_state.alt, 1);
     w0 = vfdlib_getTextWidth(line, 0);
     vfdlib_drawText(screen, line, 96-w0, h0, 0,
-		    gps_state.fix == 3 ? -1 : VFDSHADE_MEDIUM);
+		    gps_state.fix == 0x3 ? -1 : VFDSHADE_MEDIUM);
 
     /* show speed */
     formatdist(line, gps_speed, 0);
     strcat(line, "/h");
     w0 = vfdlib_getTextWidth(line, 0);
-    vfdlib_drawText(screen, line, 96-w0, 2*h0, 0, -1);
+    vfdlib_drawText(screen, line, 96-w0, 2*h0, 0,
+		    gps_state.fix == 0x3 ? -1 : VFDSHADE_MEDIUM);
 
     /* show HDOP */
     if (gps_state.hdop < 100.0)
@@ -457,11 +458,11 @@ void draw_sats(struct gps_state *gps)
     else strcpy(line, "--.-- HD");
     w0 = vfdlib_getTextWidth(line, 0);
     vfdlib_drawText(screen, line, 96-w0, 3*h0, 0,
-		    gps_state.fix ? -1 : VFDSHADE_MEDIUM);
+		    gps_state.fix & 0x1 ? -1 : VFDSHADE_MEDIUM);
 
     /* show type of fix and # of svs used */
     {
-	char *fixes[] = {"--", "  ", "2D", "3D" };
+	char *fixes[] = {" -", "2D", "--", "3D" };
 	sprintf(line, "%s %2d SV", fixes[gps_state.fix], nsvs);
 	w0 = vfdlib_getTextWidth(line, 0);
 	vfdlib_drawText(screen, line, 96-w0, 4*h0, 0, -1);
