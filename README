@@ -3,46 +3,26 @@ GPS application for the Empeg/RioCar player.
 Requirements
 
 - Empeg / RioCar player ;)
-- Hijack kernel
-- Empeg preinit
+- Hijack kernel v309 (or later)
 - Python to convert downloaded routes on the desktop.
 
 Installation
 
-- This program looks for routes in /programs0/routes so you should have
-  /dev/hda2 mounted as /programs0. In-depth instructions can be found on
-  the wonderful "Unofficial Empeg/RioCar BBS" (http://empeg.comms.net/).
+- Upload "gpsapp" to your empeg and make sure they are executable (chmod 755).
+  Suggested location, /drive0/var/gpsapp/gpsapp
 
-- Upload "gpsapp", "incar" and "hack_init" to /programs0 and make sure
-  they are executable (chmod 755).
+- Add the following to a [hijack] section in config.ini.
 
-- Put 'M50gpsapp' in /etc/preinit.d, so that gpsapp is started when the
-  player is booted. If your GPS does not provide NMEA output, you can
-  specify an alternative protocol in config.ini (see below).
-
-- We need to keep the player application off of the serial port. This
-  involves running the player with the -s- option, which can as far as I
-  can see only be done by binary editing /bin/init.
-
-  For this, I wrote the small app 'hack_init', which first copies itself
-  to /empeg/bin/play-s, and then modifies /bin/init to call this new binary.
-  When hack_init is called as /empeg/bin/play-s it will check whether we
-  are in DC (Car) mode, and adds the '-s-' flag to the player's commandline.
-
-  So you only need to do 'rw ; /programs0/hack_init ; ro' once and you're set.
+  ;@DC ;@EXEC_ONCE /drive0/var/gpsapp/gpsapp
 
 - At this point, when the player starts in the car (or forced to DC mode
   with hijack), gpsapp will be started and will show up as GPSapp in the
-  hijack menu. It has basic functionality, i.e. it can run and 'track'
-  movement from a GPS attached to the serial port.
+  hijack menu.
 
 - When selected in the hijack menu, it should initially show 'Waiting
   for data from GPS receiver'. This message will be visible until either
   data is received over the serial port, presumably from the GPS, or a
-  button is pressed,
-
-  If the first message is 'Unknown protocol, using NMEA', you specified
-  an unknown protocol in config.ini.
+  button is pressed.
 
 - Once any input is received you are in the 'satellite signal strength'
   view. This shows signal strength bars in the left of the screen, and
@@ -50,6 +30,11 @@ Installation
   haven't received any of this info it shows 'Looking for satellites',
   some GPS's never send this information, others will only start sending
   it once they have achieved a 'fix'.
+
+  If nothing happens, your gps might not be set up correctly to output
+  NMEA. You might have to change the protocol to TSIP (for trimble), or
+  earthmate (for delorme earthmate), or figure out how to get NMEA at
+  4800 baud from your specific GPS receiver.
 
   Long press the down button (2-3 secs) and you're in the map screen,
   down, and a couple of left or right button presses should bring you to
@@ -73,8 +58,12 @@ Installation
   conversion was already done before. Without the projection we can draw
   the same amount of data to the screen in a few milliseconds.
   
-  Create a directory /programs0/routes on the empeg player and upload
-  the route to any name you want.
+  By default, gpsapp will look for routes in /programs0/routes, see
+  notes at the end. You could also put the routes in
+  /drive0/var/gpsapp/routes and add a config.ini section as follows,
+
+  [gpsapp]
+  routedir=/drive0/var/gpsapp/routes
 
 - Static configuration can be done in config.ini. Options go in a
   [gpsapp] section, and are:
@@ -145,4 +134,23 @@ Short operating instructions
     left button   previous route in /programs0/routes
     right button  next route in /programs0/routes
     bottom button load selected route
+
+
+Misc notes
+----------
+
+By default, gpsapp looks for routes in /programs0/routes and have
+/dev/hda2 mounted as /programs0. This way you don't have to worry about
+reinstalling your routes whenever you install a new release of the
+official empeg software. In-depth instructions can be found on the
+wonderful "Unofficial Empeg/RioCar BBS" (http://empeg.comms.net/).
+
+However those instructions typically involve installing empeg-preinit
+with some additional scripts to get /programs0 mounted. It might be
+possible to do this without empeg-preinit by adding the following to
+config.ini before any other ;@EXEC lines.
+
+    ;@EXEC_ONCE /sbin/mount -oro -text2 /mnt/hda2 /programs0
+
+caveat, I haven't tried this myself.
 
