@@ -1,3 +1,8 @@
+Changes in v0.8
+
+ * Fixed TSIP protocol decoding, it turned out that ARM doubles are IEEE
+   format but with the words swapped.
+
 Changes in v0.7
 
  * Using ellwebers suggestion to freeze the bearing pointer whenever the speed

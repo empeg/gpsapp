@@ -43,16 +43,22 @@ static short INT16(char *p)
 
 static float Single(char *p)
 {
-    int tmp = ((p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3]);
-    return *(float *)&tmp;
+    union { char c[4]; float v; } u;
+    u.c[3] = p[0]; u.c[2] = p[1]; u.c[1] = p[2]; u.c[0] = p[3];
+    return u.v;
 }
 
 static double Double(char *p)
 {
-    long tmp1 = (p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3];
-    long tmp2 = (p[4] << 24) | (p[5] << 16) | (p[6] << 8) | p[7];
-    long long tmp = ((long long)tmp1 << 32) | (long long)tmp2;
-    return *(double *)&tmp;
+    union { char c[8]; double v; } u;
+#ifdef __arm__ /* arm uses a different representation for doubles */
+    u.c[7] = p[4]; u.c[6] = p[5]; u.c[5] = p[6]; u.c[4] = p[7];
+    u.c[3] = p[0]; u.c[2] = p[1]; u.c[1] = p[2]; u.c[0] = p[3];
+#else
+    u.c[7] = p[0]; u.c[6] = p[1]; u.c[5] = p[2]; u.c[4] = p[3];
+    u.c[3] = p[4]; u.c[2] = p[5]; u.c[1] = p[6]; u.c[0] = p[7];
+#endif
+    return u.v;
 }
 
 static void tsip_c25softreset(void)
