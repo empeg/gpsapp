@@ -48,13 +48,13 @@ static char *menu_msg[] = {
 };
 #define MENU_ENTRIES 8
 
-void timesub(struct timeval *from, struct timeval *val)
+void timesub(struct timeval *res, struct timeval *from, struct timeval *val)
 {
-    from->tv_sec -= val->tv_sec;
-    from->tv_usec -= val->tv_usec;
-    if (from->tv_usec < 0) {
-	from->tv_sec--;
-	from->tv_usec += 1000000;
+    res->tv_sec  = from->tv_sec  - val->tv_sec;
+    res->tv_usec = from->tv_usec - val->tv_usec;
+    if (res->tv_usec < 0) {
+	res->tv_sec--;
+	res->tv_usec += 1000000;
     }
 }
 
@@ -136,23 +136,27 @@ static void refresh_display(void)
 static int handle_input(void)
 {
     static struct timeval pressed;
-    struct timeval now;
+    static int long_press;
+    struct timeval now, diff;
     unsigned long key;
     int rc;
 
     serial_poll();
 
-    if (pressed.tv_sec) {
+    if (pressed.tv_sec && pressed.tv_usec) {
 	gettimeofday(&now, NULL);
-	timesub(&now, &pressed);
+	timesub(&diff, &now, &pressed);
 	/* LONG_PRESS? */
-	if (now.tv_sec >= 1) {
+	if (diff.tv_sec >= 1) {
 	    switch (visual) {
 	    case VIEW_SATS:  visual = VIEW_MAP; break;
 	    case VIEW_MAP:   visual = VIEW_ROUTE; break;
 	    case VIEW_ROUTE: visual = VIEW_SATS; break;
 	    }
-	    pressed.tv_sec = 0;
+	    /* allow for cycling by keeping the button pressed */
+	    pressed.tv_sec  = now.tv_sec;
+	    pressed.tv_usec = now.tv_usec;
+	    long_press = 1;
 	    do_refresh = 1;
 	    return 0;
 	}
@@ -176,8 +180,11 @@ static int handle_input(void)
 	break;
 
     case IR_BOTTOM_BUTTON_RELEASED:
-	if (pressed.tv_sec == 0) break;
-	pressed.tv_sec = 0;
+	pressed.tv_sec = pressed.tv_usec = 0;
+	if (long_press) {
+	    long_press = 0;
+	    break;
+	}
 	if (load_route) {
 	    route_load();
 	    load_route = 0;
