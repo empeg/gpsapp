@@ -78,7 +78,7 @@ void draw_lines(const struct xy *pts, const int npts, const int shade)
     struct xy last_xy, cur_xy;
     int cf, ct;
 
-    if (npts == 0) return;
+    if (npts <= 1) return;
 
     cf = project(&pts[0], &last_xy);
     for (i = 1; i < npts; i++) {
