@@ -13,6 +13,8 @@ Changes in v0.15
  * Merged Derrick's patches for specifying a different serial port, whether to
    send a coldstart sequence to earthmate GPS's, and to specify the location
    of route files. (serialport=, coldstart= and routedir=)
+ * Updated installation instructions based on Hijack v309, removed hack_init
+   and incar as they are not needed anymore with the new installation.
 
 Changes in v0.14
 
