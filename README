@@ -98,6 +98,11 @@ Installation
     permanent, never if false
   o time=[true|false]
     show time to next waypoint if true, distance if false
+  o serialport=/dev/serial
+    the path to the serial port you wish to use. defaults to /dev/ttyS1
+  o coldstart=[true|false]
+    allow GPS coldstart. defaults to true. only works for Zodiac-based GPS
+    units, like Earthmate and Rand McNally
 
 Short operating instructions
 

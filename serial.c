@@ -27,6 +27,7 @@
 #define GPSD_PORT 2947
 
 int serialfd = -1;
+char *serport = NULL;
 
 /* this is a buffer that can be shared by all protocols because only one will
  * be active at a time anyways */
@@ -84,7 +85,7 @@ static int gpsd_open(void)
 }
 #endif
 
-void serial_open(void)
+void serial_open()
 {
     int ret = -1, parity;
     speed_t spd;
@@ -106,7 +107,7 @@ void serial_open(void)
     if (protocol->baud == 0)
 	goto tracklog;
 
-    serialfd = open(SERIALDEV, O_NOCTTY | O_RDWR | O_NONBLOCK);
+    serialfd = open(serport?serport:SERIALDEV, O_NOCTTY | O_RDWR | O_NONBLOCK);
     if (serialfd == -1) goto exit;
 
     ret = tcgetattr(serialfd, &termios);

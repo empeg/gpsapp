@@ -16,6 +16,14 @@
 #define ETX 0xFF
 #define WD(x) 2*x
 
+struct zodiac_header {
+    unsigned short sync;
+    unsigned short id;
+    unsigned short ndata;
+    unsigned short flags;
+    unsigned short csum;
+};
+
 static short INT16(unsigned char *p)
 {
     return ((p[1] << 8) | p[0]);
@@ -102,6 +110,16 @@ static void em_1003sats(struct gps_state *gps)
 	gps->updated = GPS_STATE_SATS;
 }
 
+static unsigned short zodiac_checksum(unsigned short *w, int n)
+{
+    unsigned short csum = 0;
+
+    while (n--)
+        csum += *(w++);
+    csum = -csum;
+    return csum;
+}
+
 static void em_decode(struct gps_state *gps)
 {
     if (packet_idx < 1) return;
@@ -170,4 +188,22 @@ restart:
 }
 
 REGISTER_PROTOCOL("EARTHMATE", 9600, 'N', NULL, NULL, em_update);
+
+void zodiac_send(int type, unsigned short *dat, int dlen)
+{
+    struct zodiac_header h;
+
+    h.flags = 0;
+
+    h.sync = 0x81ff;
+    h.id = (unsigned short) type;
+    h.ndata = dlen - 1; /* data checksum word doesn't count */
+    h.csum = zodiac_checksum((unsigned short *) &h, 4);
+
+    /* Add data checksum */
+    dat[dlen - 1] = zodiac_checksum(dat, dlen - 1);
+
+    serial_send((char *)&h, sizeof(h));
+    serial_send((char *)dat, (sizeof(unsigned short) * dlen));
+}
 

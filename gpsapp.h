@@ -18,6 +18,8 @@ extern int show_metric;
 extern int show_popups;
 extern int show_time;
 extern int coord_format; /* DDD = 0, DMM = 1, DMS = 2 */
+extern int do_coldstart;
+extern char *serport;
 
 /* screen coordinates */
 struct xy { int x, y; };
@@ -107,7 +109,7 @@ extern int		gps_bearing;   /* last 'stable' bearing measurement */
 #define AVGVMG_SHIFT 6
 
 void serial_protocol(char *proto);
-void serial_open(void);
+void serial_open();
 void serial_close(void);
 void serial_poll(void);
 
@@ -116,5 +118,7 @@ void serial_poll(void);
 #define CONFIG_HDRLEN 8
 int config_ini_option (char *s, char *match, int *inside);
 
+/* zodiac data send function (for init) (gps_earthmate.c) */
+void zodiac_send (int type, unsigned short *dat, int dlen);
 #endif
 

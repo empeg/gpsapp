@@ -402,6 +402,7 @@ static void nmea_init(void)
   char buf[40];
   time_t t;
   struct tm *tm;
+  unsigned short *dat;
 
   t = time(NULL);
   tm = gmtime(&t);
@@ -414,6 +415,20 @@ static void nmea_init(void)
 	  tm->tm_hour, tm->tm_min, tm->tm_sec,
 	  tm->tm_mday, tm->tm_mon + 1, tm->tm_year);
   serial_send(buf, 38);
+
+  if (do_coldstart==0) {
+    memset(buf, 0, sizeof(buf));
+    dat = (unsigned short *)buf;
+    dat[0] = 1; /* serial number, should increment XXX */
+    dat[1] = (1 << 0); /* disable cold start */
+    zodiac_send(1216, dat, 4); /* 9 - 5 */
+
+    memset(buf, 0, sizeof(buf));
+    dat = (unsigned short *)buf;
+    dat[0] = 2; /* serial number, should increment XXX */
+    dat[1] = 5; /* car */
+    zodiac_send(1220, dat, 3); /* 8 - 5 */
+  }
 }
 
 REGISTER_PROTOCOL("NMEA", 4800, 'N', nmea_init, NULL, nmea_update);

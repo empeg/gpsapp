@@ -27,6 +27,7 @@ int show_track      = 1;
 int show_scale      = 1;
 int show_popups     = 1;
 int show_time	    = 0;
+int do_coldstart    = 0;
 
 /* height of font 0, used a lot, so looking it up once might be useful */
 int h0;
@@ -312,8 +313,10 @@ init_gpsapp()
 	buf[bytes]='\0';
 	offset=CONFIG_HDRLEN; 
 	done+=bytes;
-	/* special case, handled internal to config_ini_option */
+	/* special cases, handled internal to config_ini_option */
 	config_ini_option (buf, "protocol", &inside);
+	config_ini_option (buf, "serialport", &inside);
+
 	ret = config_ini_option (buf, "visual", &inside);
 	if (ret > -1 && ret < 3) visual = ret;
 	ret = config_ini_option (buf, "metric", &inside);
@@ -330,6 +333,8 @@ init_gpsapp()
 	if (ret > -1 && ret < 3) show_popups = ret;
 	ret = config_ini_option (buf, "time", &inside);
 	if (ret > -1 && ret < 2) show_time = ret;
+	ret = config_ini_option (buf, "coldstart", &inside);
+	if (ret > -1 && ret < 2) do_coldstart = ret;
 	if (lseek(fd, -CONFIG_HDRLEN, SEEK_CUR) != done- CONFIG_HDRLEN) {
 	    // bomb out?
 	}
