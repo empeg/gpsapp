@@ -188,12 +188,6 @@ void draw_scale(void)
     char buf[10];
 
     formatdist(buf, 8 << map_scale, 0);
-
-#if 0
-    vfdlib_drawLineHorizUnclipped(screen, 0, MAX_X - 4, 3, VFDSHADE_BRIGHT);
-    vfdlib_drawLineHorizUnclipped(screen, 7, MAX_X - 4, 3, VFDSHADE_BRIGHT);
-    vfdlib_drawLineVertUnclipped(screen, MAX_X - 3, 1, 6, VFDSHADE_BRIGHT);
-#endif
     vfdlib_drawText(screen, buf, MAX_X - vfdlib_getTextWidth(buf, 0), 1, 0,
 		    VFDSHADE_MEDIUM);
 }
@@ -213,10 +207,10 @@ void draw_info(void)
     struct xy pos;
     double b2;
 
-    vfdlib_drawLineVertUnclipped(screen, MAX_X, 0, 7, VFDSHADE_MEDIUM);
-    vfdlib_drawLineVertUnclipped(screen, MAX_X, 8, 15, VFDSHADE_DIM);
-    vfdlib_drawLineVertUnclipped(screen, MAX_X, 16, 24, VFDSHADE_MEDIUM);
-    vfdlib_drawLineVertUnclipped(screen, MAX_X, 24, 32, VFDSHADE_DIM);
+    vfdlib_drawLineVertUnclipped(screen, MAX_X, 0, 8, VFDSHADE_BRIGHT);
+    vfdlib_drawLineVertUnclipped(screen, MAX_X, 8, 8, VFDSHADE_MEDIUM);
+    vfdlib_drawLineVertUnclipped(screen, MAX_X, 16, 8, VFDSHADE_BRIGHT);
+    vfdlib_drawLineVertUnclipped(screen, MAX_X, 24, 8, VFDSHADE_MEDIUM);
 
     if (route_getwp(-1, NULL, &dist, NULL)) {
 	if (show_time) time_estimate(buf, dist);

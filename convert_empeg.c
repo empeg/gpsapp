@@ -90,24 +90,26 @@ char *format_coord(char *buf, double latr, double lonr)
     switch (coord_format) {
     case 2:
 	{
-	int lat_deg, lon_deg, lat_min, lon_min;
+	unsigned int lat_deg, lon_deg, lat_min, lon_min;
+	lat = fabs(lat); lon = fabs(lon);
 	lat_deg = lat; lat = (lat - lat_deg) * 60;
 	lon_deg = lon; lon = (lon - lon_deg) * 60;
 	lat_min = lat; lat = (lat - lat_min) * 60;
 	lon_min = lon; lon = (lon - lon_min) * 60;
 	sprintf(buf, "%2d%c%02d\"%04.1f' %3d%c%02d\"%04.1f'",
-		abs(lat_deg), lat_deg >= 0 ? 'N' : 'S', lat_min, lat,
-		abs(lon_deg), lon_deg >= 0 ? 'W' : 'E', lon_min, lon);
+		lat_deg, latr >= 0 ? 'N' : 'S', lat_min, lat,
+		lon_deg, lonr >= 0 ? 'W' : 'E', lon_min, lon);
 	}
 	break;
     case 1:
 	{
-	int lat_deg, lon_deg;
+	unsigned int lat_deg, lon_deg;
+	lat = fabs(lat); lon = fabs(lon);
 	lat_deg = lat; lat = (lat - lat_deg) * 60;
 	lon_deg = lon; lon = (lon - lon_deg) * 60;
 	sprintf(buf, "%2d%c%06.3f\" %3d%c%06.3f\"",
-		abs(lat_deg), lat_deg >= 0 ? 'N' : 'S', lat,
-		abs(lon_deg), lon_deg >= 0 ? 'W' : 'E', lon);
+		lat_deg, latr >= 0 ? 'N' : 'S', lat,
+		lon_deg, lonr >= 0 ? 'W' : 'E', lon);
 	}
 	break;
     case 0:
