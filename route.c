@@ -30,6 +30,11 @@ static int selected_route;
 static char **routes;
 static int nroutes;
 
+static int qcmp(const void *a, const void *b)
+{
+    return strcasecmp(*(const char **)a, *(const char **)b);
+}
+
 int routes_init(void)
 {
     DIR *dir;
@@ -44,12 +49,9 @@ int routes_init(void)
     dir = opendir(ROUTE_DIR);
     if (!dir) return 0;
 
-    while (1) {
-	entry = readdir(dir);
-	if (!entry) break;
-	if (entry->d_name[0] == '.') continue;
+    while ((entry = readdir(dir)) != NULL)
 	nroutes++;
-    }
+
     routes = malloc(nroutes * sizeof(char *));
     if (!routes) {
 	closedir(dir);
@@ -61,12 +63,25 @@ int routes_init(void)
     rewinddir(dir);
     i = 0;
     while (1) {
+	char buf[PATH_MAX];
+	struct stat s;
+
 	entry = readdir(dir);
 	if (!entry) break;
-	if (entry->d_name[0] == '.') continue;
-	routes[i++] = strdup(entry->d_name);
+
+	strcpy(buf, ROUTE_DIR);
+	strcat(buf, "/");
+	strcat(buf, entry->d_name);
+
+	if (stat(buf, &s) == 0 && S_ISREG(s.st_mode))
+	    routes[i++] = strdup(entry->d_name);
+	else
+	    nroutes--; // we allocated a couple of pointers more than necessary.
     }
     closedir(dir);
+
+    /* sort the list alphabetically */
+    qsort(routes, nroutes, sizeof(char *), qcmp);
     return 1;
 }
 

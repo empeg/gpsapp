@@ -15,10 +15,11 @@ Changes in v0.11
    gps_protocol.c.
  * More useful patches from Derrick, parsing config.ini for default options.
    Showing what state we toggled a menu entry to once it is selected.
-   Sending Motorola Oncore init sentence to enable VTG logging.
+   Sending Motorola Oncore init sentence to enable RMC, GSA, and GSV logging.
  * Added a 'permanent' setting for popup descriptions.
  * Went with tfabris's suggestion and changed rubberband so that it highlights
    the next section of the route.
+ * Skipping directories and sorting the list of routes.
 
 Changes in v0.10
 
