@@ -351,7 +351,7 @@ int main(int argc, char **argv)
     int rc = 0;
 
     if (empeg_init() == -1)
-	exit(-1);
+	exit(0);
 
     /* set a default protocol, now we only complain when the user specifies an
      * unknown protocol in config.ini */
@@ -406,6 +406,6 @@ int main(int argc, char **argv)
 
     vfdlib_unregisterAllFonts();
     empeg_free();
-    return 0;
+    exit(0);
 }
 
