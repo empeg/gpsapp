@@ -65,6 +65,17 @@ config_ini_option (char *s, char *match, int *inside)
 	  if (!eof)
 	    return -1;
 
+	  /* Special handling for "protocol" */
+	  if (!strcmp(match, "protocol")) {
+	    char proto_name[12]; /* Be stingy, but we may need more later? */
+	    int sz = ((eof-(f+1))>11)?11:(eof-(f+1)); /* reserve \0 */
+
+	    strncpy(proto_name, (char *)f+1, sz); /* maybe no \0 */
+	    proto_name[sz] = '\0'; 
+	    serial_protocol(proto_name); /* safe due to nmea default later */
+	    return 0;
+	  }
+
 	  if (!strncasecmp((char *)f+1, "permanent", (eof-(f+1)))) {
 	    return 2;
 	  }	    

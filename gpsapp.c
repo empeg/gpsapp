@@ -306,8 +306,10 @@ init_gpsapp()
 	buf[bytes]='\0';
 	offset=CONFIG_HDRLEN; 
 	done+=bytes;
+	/* special case, handled internal to config_ini_option */
+	config_ini_option (buf, "protocol", &inside);
 	ret = config_ini_option (buf, "visual", &inside);
-	if (ret > -1 && ret < 3) show_visual = ret;
+	if (ret > -1 && ret < 3) visual = ret;
 	ret = config_ini_option (buf, "metric", &inside);
 	if (ret > -1 && ret < 2) show_metric = ret;
 	ret = config_ini_option (buf, "gpscoords", &inside);
@@ -339,6 +341,11 @@ int main(int argc, char **argv)
     if (empeg_init() == -1)
 	exit(-1);
 
+    /* only for backward compatibility as the user can specify the protocol in
+     * config.ini */
+    if (argc > 1)
+	serial_protocol(argv[1]);
+
     init_gpsapp();
 
     printf("GPS app started\n");
@@ -347,10 +354,6 @@ int main(int argc, char **argv)
     h0 = vfdlib_getTextHeight(0);
 
     route_init();
-
-    /* we need a way to look the protocol up in a config file? */
-    if (argc > 1)
-	serial_protocol(argv[1]);
 
     while (rc != -1) {
 	if (empeg_waitmenu(menu) == -1)

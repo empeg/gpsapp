@@ -80,6 +80,9 @@ Installation
 
 - Static configuration can be done in config.ini. Options go in a
   [gpsapp] section, and are:
+  o protocol: [nmea|tsip|earthmate|garmin|taip]
+    select protocol we use to talk to the GPS. Most gps's will work fine
+    in NMEA, which is also the default setting.
   o visual: [sats|map|route]
     select default visual mode
   o metric: [true|false]           
