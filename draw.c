@@ -17,7 +17,7 @@
 #define MAX_Y (VFD_HEIGHT)
 
 static unsigned char screen[VFD_HEIGHT * VFD_BYTES_PER_SCANLINE];
-static int map_scale = 5;
+static int map_scale = 4;
 
 void draw_activity(int refresh)
 {

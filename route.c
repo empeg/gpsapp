@@ -287,7 +287,7 @@ void route_locate(void)
     if (nextwp >= route.nwps)
 	nextwp = 0;
 
-    minidx = (nextwp > 1) ? route.wps[nextwp-1].idx : 0;
+    minidx = (nextwp > 1) ? route.wps[nextwp-1].idx + 1 : 0;
     mindist = distance2(&gps_coord.xy, &route.pts[minidx]);
 
     for (idx = minidx+1; idx <= route.wps[nextwp].idx; idx++) {
