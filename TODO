@@ -2,17 +2,15 @@
   Perhaps it is a result of using HIJACK_POLLBUTTONS instead of
   WAITBUTTONS?
 
-* Display current speed/averaged speed/magnetic north/GPS time.
-  Probably not really enough room on the display for too much more
-  information. We could speed/ETE/altitude instead of the fancy arrow.
+* Display magnetic north/GPS time. Probably not really enough room on
+  the display for too much more information.
 
 * NMEA output over IRDA (and in the satellite screen).
 
 * Use the bearing pointer as a compass when no route is loaded.
   (Need a way to discard the current route then...)
 
-* Make menu code a bit more structured and the final menus nicer on
-  the eye.
+* Make menu code a bit more structured and the final menus nicer on the eye.
 
 * Cleanup python scripts.
 
