@@ -274,7 +274,7 @@ void route_locate(void)
     int idx;
     long long mindist, dist;
 
-    if (nextwp >= route.nwps) return;
+    if (!route.nwps) return;
 
     /* don't try to be smart, just search based on the current nextwp */
     if (minidx >= route.npts)
@@ -282,7 +282,7 @@ void route_locate(void)
     mindist = distance2(&gps_coord.xy, &route.pts[minidx]);
 
     for (idx = minidx; idx < route.npts; idx++) {
-	if (nextwp < route.nwps-1 && idx >= route.wps[nextwp].idx+1)
+	if (nextwp < route.nwps-1 && idx > route.wps[nextwp].idx)
 	    break;
 
 	dist = distance2(&gps_coord.xy, &route.pts[idx]);
@@ -293,29 +293,19 @@ void route_locate(void)
 	mindist = dist;
     }
 
-    /* ok we're really close now */
-    /* did we pass the point we just found? */
+    /* ok we're really close now,
+     * are there any points after the current one? */
     if (minidx+1 < route.npts-1) {
-#if 0
-	if (!towards(&gps_coord.xy, &route.pts[minidx], gps_bearing) &&
-	    towards(&gps_coord.xy, &route.pts[minidx+1], gps_bearing)) {
+	/* and are we moving away from the point we just found? */
+	if (!towards(&gps_coord.xy, &route.pts[minidx], gps_bearing)) {
 	    minidx++;
 	    mindist = distance2(&gps_coord.xy, &route.pts[minidx]);
 	}
-#else
-	if (!towards(&gps_coord.xy, &route.pts[minidx], gps_bearing) &&
-	    minidx + 1 < route.npts) {
-	    dist = distance2(&gps_coord.xy, &route.pts[minidx + 1]);
-	    if (dist < mindist) {
-		minidx++;
-		mindist = dist;
-	    }
-	}
-#endif
     }
 
-    while (minidx > route.wps[nextwp].idx)
-	nextwp++;
+    for (nextwp = 0; nextwp < route.nwps; nextwp++)
+	if (minidx <= route.wps[nextwp].idx)
+	    break;
 
     /* got it! */
     total_dist = sqrt((double)mindist) + route.dists[minidx];

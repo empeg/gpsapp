@@ -195,9 +195,13 @@ void draw_scale(void)
 
 void draw_gpscoords(void)
 {
-    char line[26];
-    format_coord(line, gps_coord.lat, gps_coord.lon);
+    char line[13];
+
+    format_coord(line, gps_coord.lat, "NS");
     vfdlib_drawText(screen, line, 0, 1, 0, VFDSHADE_DIM);
+
+    format_coord(line, gps_coord.lon, "EW");
+    vfdlib_drawText(screen, line, 0, h0+1, 0, VFDSHADE_DIM);
 }
 
 void draw_info(void)
@@ -428,8 +432,12 @@ void draw_sats(struct gps_state *gps)
     }
 
     /* show coordinates? */
-    format_coord(line, gps_state.lat, gps_state.lon);
+    format_coord(line, gps_state.lat, "NS");
+    w0 = vfdlib_getTextWidth(line, 0);
     vfdlib_drawText(screen, line, 8, 0, 0, -1);
+
+    format_coord(line, gps_state.lon, "EW");
+    vfdlib_drawText(screen, line, 12+w0, 0, 0, -1);
 
     /* show altitude */
     formatdist(line, gps_state.alt, 1);

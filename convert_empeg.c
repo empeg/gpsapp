@@ -83,38 +83,38 @@ char *time_estimate(char *buf, const int dist)
     return buf;
 }
 
-char *format_coord(char *buf, double latr, double lonr)
+char *format_coord(char *buf, double llr, char dir[2])
 {
-    double lat = radtodeg(latr), lon = radtodeg(lonr);
+    double ll = radtodeg(llr);
 
     switch (coord_format) {
     case 2:
 	{
-	unsigned int lat_deg, lon_deg, lat_min, lon_min;
-	lat = fabs(lat); lon = fabs(lon);
-	lat_deg = lat; lat = (lat - lat_deg) * 60;
-	lon_deg = lon; lon = (lon - lon_deg) * 60;
-	lat_min = lat; lat = (lat - lat_min) * 60;
-	lon_min = lon; lon = (lon - lon_min) * 60;
-	sprintf(buf, "%2d%c %02d'%04.1f\" %3d%c %02d'%04.1f\"",
-		lat_deg, latr >= 0 ? 'N' : 'S', lat_min, lat,
-		lon_deg, lonr >= 0 ? 'E' : 'W', lon_min, lon);
+	unsigned int ll_deg, ll_min;
+	char c;
+
+	ll = fabs(ll);
+	ll_deg = ll; ll = (ll - ll_deg) * 60;
+	ll_min = ll; ll = (ll - ll_min) * 60;
+	if (llr >= 0) c = dir[0];
+	else	      c = dir[1];
+	sprintf(buf, "%2d%c %02d'%04.1f\"", ll_deg, c, ll_min, ll);
 	}
 	break;
     case 1:
 	{
-	unsigned int lat_deg, lon_deg;
-	lat = fabs(lat); lon = fabs(lon);
-	lat_deg = lat; lat = (lat - lat_deg) * 60;
-	lon_deg = lon; lon = (lon - lon_deg) * 60;
-	sprintf(buf, "%2d%c %06.3f' %3d%c %06.3f'",
-		lat_deg, latr >= 0 ? 'N' : 'S', lat,
-		lon_deg, lonr >= 0 ? 'E' : 'W', lon);
+	unsigned int ll_deg;
+	char c;
+	ll = fabs(ll);
+	ll_deg = ll; ll = (ll - ll_deg) * 60;
+	if (llr >= 0) c = dir[0];
+	else	      c = dir[1];
+	sprintf(buf, "%2d%c %06.3f'", ll_deg, c, ll);
 	}
 	break;
     case 0:
     default:
-	sprintf(buf, "%12.6f %12.6f", lat, lon);
+	sprintf(buf, "%12.6f", ll);
 	break;
     }
     return buf;

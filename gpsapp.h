@@ -53,7 +53,7 @@ extern struct coord coord_center;
 
 char *formatdist(char *buf, const int distance, const int alt);
 char *time_estimate(char *buf, const int distance);
-char *format_coord(char *buf, double latr, double lonr);
+char *format_coord(char *buf, double llr, char dir[2]);
 
 void toTM(struct coord *point);
 long long distance2(const struct xy *coord1, const struct xy *coord2);
