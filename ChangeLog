@@ -1,3 +1,17 @@
+Changes in v0.11
+
+ * Derrick Brashear added earthmate support, his earthmate is currently
+   broken, so someone else should probably test if it works :)
+ * Fixed parse_mapsonus.py to deal with lines without proper line endings.
+   Now it should almost be able to parse the plain text version of the raw
+   route format as well (except for that one '<XMP>' test I still have there).
+ * Allow for cycling through the screens when the down button is not released.
+ * Genixia's suggestion to change the satellite signal scaling to display a
+   wider range (20-68).
+ * Generalized new_sat helper function, now TSIP uses it as well.
+ * Some changes for earthmate, I hope I didn't break anything that wasn't
+   already broken.
+
 Changes in v0.10
 
  * Updated README, it got outdated fast.
