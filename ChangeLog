@@ -1,3 +1,8 @@
+Changes in v0.16
+
+ * Argh, routedir= option was broken because I assigned allocated memory to
+   the wrong pointer.
+
 Changes in v0.15
 
  * From Derrick, send current time to Streetpilot receivers which should
