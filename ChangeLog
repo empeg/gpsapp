@@ -1,3 +1,10 @@
+Changes in v0.18
+
+ * Added parse_google.py to extract route information from the
+   directions from maps.google.com. Switchboard (mapsonus) switched to
+   Microsoft Mappoint powered backend and as a result no longer provides
+   raw route descriptions.
+
 Changes in v0.17
 
  * Corrected when speed in satellite info screen is dimmed.

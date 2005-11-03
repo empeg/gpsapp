@@ -43,12 +43,10 @@ Installation
   0.0/0.0 we haven't received any location information from the GPS
   receiver.
 
-- Driving instructions are converted from the raw route descriptions
-  from http://mapsonus.switchboard.com. If you select 'show lat/long'
-  in the general options section, all planned routes will have a 'raw
-  route description' link at the bottom of the page. Save this
-  description as HTML or text and run the python script
-  'parse_mapsonus.py' to convert it into a file named 'route'.
+- Driving instructions are converted from the route descriptions embedded
+  in the pages you get from http://maps.google.com. Save a page with
+  directions as HTML and run the python script 'parse_google.py' to convert
+  it to a route file for gpsapp.
 
   Routes are preprocessed on the desktop because we have to map from
   geodetic coordinates in the NAD27 CONUS datum to a transverse mercator

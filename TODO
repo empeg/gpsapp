@@ -2,6 +2,8 @@
   Perhaps it is a result of using HIJACK_POLLBUTTONS instead of
   WAITBUTTONS?
 
+* Autoscale map to keep currently selected (and next?) waypoint visible.
+
 * Display magnetic north/GPS time. Probably not really enough room on
   the display for too much more information.
 
